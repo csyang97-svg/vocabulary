@@ -115,3 +115,14 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .word-list .x { color: #888; font-size: 18px; padding: 4px 8px; }
 .word-list .empty { color: #888; justify-content: center; }
 .icon-btn svg { vertical-align: middle; }
+.opt-col { display: flex; flex-direction: column; gap: 12px; }
+.opt-label { color: #9a9a9a; font-size: 14px; margin: 4px 0 -2px; }
+.feedback .answer { margin-top: 4px; }
+.feedback .hint-tag { color: #f5c518; font-size: 15px; }
+.example {
+  margin-top: 12px; text-align: left; background: #2c2c2c; border-left: 3px solid #6f9ad1;
+  border-radius: 6px; padding: 10px 12px; font-size: 16px;
+}
+.example .en { color: #eee; }
+.example .en b { color: #8fb6ea; }
+.example .zh { color: #aaa; font-size: 14px; margin-top: 4px; }

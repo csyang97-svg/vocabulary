@@ -133,7 +133,7 @@ $('btn-weaklist').onclick = () => { renderWeakList(); show('weaklist'); };
 let quiz = null;
 
 function startQuiz(list, mode) {
-  quiz = { list: shuffle(list), mode, i: 0, correct: 0, wrongs: [], answered: false, selected: new Set() };
+  quiz = { list: shuffle(list), mode, i: 0, correct: 0, wrongs: [], answered: false, selected: new Set(), picked: null };
   show('quiz');
   renderQuestion();
 }
@@ -142,89 +142,140 @@ function renderQuestion() {
   const q = quiz.list[quiz.i];
   quiz.answered = false;
   quiz.selected = new Set();
+  quiz.picked = null;
   $('progress').textContent = `${quiz.i + 1}/${quiz.list.length}`;
   $('word').textContent = q.word;
-  $('word-sub').textContent = quiz.mode === 'pos' ? '選出所有正確的詞性(可複選)' : '';
+  $('word-sub').textContent = { meaning: '', pos: '選出所有正確的詞性(可複選)', both: '選中文意思,並選出所有詞性' }[quiz.mode];
   $('feedback').innerHTML = '';
   updateStar();
 
   const box = $('options');
   box.innerHTML = '';
-  box.className = 'options';
+  if (quiz.mode === 'both') box.appendChild(sectionLabel('中文意思'));
+  if (quiz.mode !== 'pos') box.appendChild(buildMeaningOptions(q));
+  if (quiz.mode === 'both') box.appendChild(sectionLabel('詞性(可複選)'));
+  if (quiz.mode !== 'meaning') box.appendChild(buildPosGrid());
 
-  if (quiz.mode === 'meaning') {
-    $('btn-action').classList.add('hidden');
-    const distractors = shuffle(WORDS.filter(w => w.word !== q.word && w.meaning !== q.meaning));
-    const opts = [q];
-    for (const d of distractors) {
-      if (opts.length >= 4) break;
-      if (!opts.some(o => o.meaning === d.meaning)) opts.push(d);
-    }
-    shuffle(opts).forEach(o => {
-      const b = document.createElement('button');
-      b.className = 'opt';
-      b.textContent = o.meaning;
-      b.dataset.word = o.word;
-      b.onclick = () => answerMeaning(b, o === q);
-      box.appendChild(b);
-    });
-  } else {
-    box.classList.add('pos-grid');
-    $('btn-action').textContent = '確認';
-    $('btn-action').classList.remove('hidden');
-    POS_CHOICES.forEach(p => {
-      const b = document.createElement('button');
-      b.className = 'opt';
-      b.textContent = POS_LABEL[p];
-      b.dataset.pos = p;
-      b.onclick = () => {
-        if (quiz.answered) return;
-        quiz.selected.has(p) ? quiz.selected.delete(p) : quiz.selected.add(p);
-        b.classList.toggle('selected');
-      };
-      box.appendChild(b);
-    });
+  $('btn-action').textContent = '確認';
+  $('btn-action').classList.toggle('hidden', quiz.mode === 'meaning');
+}
+
+function sectionLabel(text) {
+  const d = document.createElement('div');
+  d.className = 'opt-label';
+  d.textContent = text;
+  return d;
+}
+
+// 意思選項:合併模式只顯示中文(不顯示詞性,以免洩漏答案)
+function buildMeaningOptions(q) {
+  const label = quiz.mode === 'both' ? zhOnly : w => w.meaning;
+  const opts = [q];
+  for (const d of shuffle(WORDS)) {
+    if (opts.length >= 4) break;
+    if (!opts.some(o => label(o) === label(d))) opts.push(d);
   }
-}
-
-function answerMeaning(btn, ok) {
-  if (quiz.answered) return;
-  quiz.answered = true;
-  const q = quiz.list[quiz.i];
-  document.querySelectorAll('#options .opt').forEach(b => {
-    if (b.dataset.word === q.word) b.classList.add('correct');
+  const wrap = document.createElement('div');
+  wrap.className = 'opt-col meaning-opts';
+  shuffle(opts).forEach(o => {
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.textContent = label(o);
+    b.dataset.word = o.word;
+    b.onclick = () => {
+      if (quiz.answered) return;
+      if (quiz.mode === 'meaning') {
+        quiz.picked = o.word;
+        submit();
+      } else {
+        quiz.picked = o.word;
+        wrap.querySelectorAll('.opt').forEach(x => x.classList.toggle('selected', x === b));
+      }
+    };
+    wrap.appendChild(b);
   });
-  if (!ok) btn.classList.add('wrong');
-  finishAnswer(ok);
+  return wrap;
 }
 
-function answerPos() {
-  const q = quiz.list[quiz.i];
-  if (!quiz.selected.size) { $('feedback').innerHTML = '<span class="ng">請至少選一個詞性</span>'; return; }
-  quiz.answered = true;
-  const answer = new Set(q.pos);
-  const ok = answer.size === quiz.selected.size && [...answer].every(p => quiz.selected.has(p));
-  document.querySelectorAll('#options .opt').forEach(b => {
-    const p = b.dataset.pos, sel = quiz.selected.has(p), right = answer.has(p);
+function buildPosGrid() {
+  const grid = document.createElement('div');
+  grid.className = 'pos-grid';
+  POS_CHOICES.forEach(p => {
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.textContent = POS_LABEL[p];
+    b.dataset.pos = p;
+    b.onclick = () => {
+      if (quiz.answered) return;
+      quiz.selected.has(p) ? quiz.selected.delete(p) : quiz.selected.add(p);
+      b.classList.toggle('selected');
+    };
+    grid.appendChild(b);
+  });
+  return grid;
+}
+
+function zhOnly(w) { return w.senses.map(s => s.zh).join('; '); }
+
+// 標出正確/錯誤;reveal = 按提示時直接顯示答案
+function markMeaning(q, reveal) {
+  document.querySelectorAll('#options .meaning-opts .opt').forEach(b => {
     b.classList.remove('selected');
-    if (sel && right) b.classList.add('correct');
-    else if (sel && !right) b.classList.add('wrong');
-    else if (!sel && right) b.classList.add('missed');
+    if (b.dataset.word === q.word) b.classList.add('correct');
+    else if (!reveal && b.dataset.word === quiz.picked) b.classList.add('wrong');
   });
-  finishAnswer(ok);
+}
+function markPos(q, reveal) {
+  const answer = new Set(q.pos);
+  document.querySelectorAll('#options .pos-grid .opt').forEach(b => {
+    const p = b.dataset.pos, sel = !reveal && quiz.selected.has(p), right = answer.has(p);
+    b.classList.remove('selected');
+    if (right && (sel || reveal)) b.classList.add('correct');
+    else if (sel && !right) b.classList.add('wrong');
+    else if (right) b.classList.add('missed');
+  });
 }
 
-function finishAnswer(ok) {
+function submit() {
+  const q = quiz.list[quiz.i];
+  const needMeaning = quiz.mode !== 'pos', needPos = quiz.mode !== 'meaning';
+  if (needMeaning && !quiz.picked) return warn('請選一個中文意思');
+  if (needPos && !quiz.selected.size) return warn('請至少選一個詞性');
+  quiz.answered = true;
+
+  const answer = new Set(q.pos);
+  const meaningOk = !needMeaning || quiz.picked === q.word;
+  const posOk = !needPos || (answer.size === quiz.selected.size && [...answer].every(p => quiz.selected.has(p)));
+  if (needMeaning) markMeaning(q, false);
+  if (needPos) markPos(q, false);
+
+  let msg = '';
+  if (quiz.mode === 'both' && meaningOk !== posOk) msg = meaningOk ? '(意思對,詞性錯)' : '(詞性對,意思錯)';
+  finishAnswer(meaningOk && posOk, msg);
+}
+function warn(text) { $('feedback').innerHTML = `<span class="ng">${text}</span>`; }
+
+function finishAnswer(ok, msg = '', hinted = false) {
   const q = quiz.list[quiz.i];
   record(q.word, ok);
   if (ok) quiz.correct++;
   else quiz.wrongs.push(q);
   updateStar();
-  $('feedback').innerHTML =
-    (ok ? '<span class="ok">✔ 答對了</span>' : '<span class="ng">✘ 答錯了</span>') +
-    `<br>${esc(q.word)}  ${esc(q.meaning)}`;
+  const head = hinted
+    ? '<span class="hint-tag">正確答案(看提示算答錯,已加入不熟單字)</span>'
+    : ok ? '<span class="ok">✔ 答對了</span>' : `<span class="ng">✘ 答錯了${msg}</span>`;
+  $('feedback').innerHTML = head + `<div class="answer">${esc(q.word)}  ${esc(q.meaning)}</div>` + exampleHtml(q);
   $('btn-action').textContent = quiz.i + 1 < quiz.list.length ? '下一題' : '看結果';
   $('btn-action').classList.remove('hidden');
+}
+
+// 例句,並把單字(含變化形)標粗體
+function exampleHtml(q) {
+  const ex = EXAMPLES[q.word];
+  if (!ex) return '';
+  const stem = q.word.length > 4 ? q.word.replace(/[ey]$/, '') : q.word;
+  const re = new RegExp(`\\b(${stem}\\w*)`, 'gi');
+  return `<div class="example"><div class="en">${esc(ex[0]).replace(re, '<b>$1</b>')}</div><div class="zh">${esc(ex[1])}</div></div>`;
 }
 
 function next() {
@@ -234,25 +285,19 @@ function next() {
 }
 
 $('btn-action').onclick = () => {
-  if (!quiz.answered) answerPos();
+  if (!quiz.answered) submit();
   else next();
 };
 $('word-card').onclick = () => speak(quiz.list[quiz.i].word);
 
+// 提示:直接顯示正確答案與例句,這題算答錯
 $('btn-hint').onclick = () => {
   if (quiz.answered) return;
   const q = quiz.list[quiz.i];
-  if (quiz.mode === 'meaning') {
-    // 刪掉一個錯誤選項
-    const wrongOpts = [...document.querySelectorAll('#options .opt:not(.faded)')]
-      .filter(b => b.dataset.word !== q.word);
-    if (wrongOpts.length > 1) {
-      const b = wrongOpts[Math.floor(Math.random() * wrongOpts.length)];
-      b.classList.add('faded'); b.disabled = true;
-    }
-  } else {
-    $('word-sub').textContent = `提示:共有 ${q.pos.length} 個詞性`;
-  }
+  quiz.answered = true;
+  if (quiz.mode !== 'pos') markMeaning(q, true);
+  if (quiz.mode !== 'meaning') markPos(q, true);
+  finishAnswer(false, '', true);
 };
 
 function updateStar() {
