@@ -126,3 +126,13 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .example .en { color: #eee; }
 .example .en b { color: #8fb6ea; }
 .example .zh { color: #aaa; font-size: 14px; margin-top: 4px; }
+.word-card { position: relative; }
+.say {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 50%; color: #8fb6ea; flex: none;
+}
+.say:active { background: #3c4a60; }
+.say-card { position: absolute; right: 8px; bottom: 8px; }
+.example { position: relative; padding-right: 48px; }
+.example .say { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+.word-list .say { width: 32px; height: 32px; margin: -6px 0 -6px -6px; }

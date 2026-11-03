@@ -4,19 +4,18 @@
 const POS_LABEL = { n: 'n.', v: 'v.', adj: 'adj.', adv: 'adv.', prep: 'prep.' };
 const POS_CHOICES = ['n', 'v', 'adj', 'adv'];
 
-const WORDS = RAW_WORDS.map(([word, page, def]) => {
-  const senses = def.split('|').map(s => {
-    const [pos, zh] = s.split(':');
-    return { pos, zh };
-  });
-  return {
-    word, page, senses,
-    pos: [...new Set(senses.map(s => s.pos))],
-    meaning: senses.map(s => `${POS_LABEL[s.pos]} ${s.zh}`).join('  '),
-  };
-});
-const BY_WORD = Object.fromEntries(WORDS.map(w => [w.word, w]));
-const PAGES = [...new Set(WORDS.map(w => w.page))].sort((a, b) => a - b);
+// 題庫在 data/words.json,啟動時載入(見最下方 init)
+let WORDS = [], BY_WORD = {}, PAGES = [];
+
+function setWords(list) {
+  WORDS = list.map(w => ({
+    ...w,
+    pos: [...new Set(w.senses.map(s => s.pos))],
+    meaning: w.senses.map(s => `${POS_LABEL[s.pos]} ${s.zh}`).join('  '),
+  }));
+  BY_WORD = Object.fromEntries(WORDS.map(w => [w.word, w]));
+  PAGES = [...new Set(WORDS.map(w => w.page))].sort((a, b) => a - b);
+}
 
 // ---------- 紀錄(存在瀏覽器 localStorage) ----------
 const STORE_KEY = 'vocab_stats_v1';
@@ -82,6 +81,32 @@ function speak(text) {
   u.lang = 'en-US'; u.rate = 0.9;
   speechSynthesis.speak(u);
 }
+// 播放預先產生的音檔(audio/w 單字、audio/e 例句),沒有音檔時改用瀏覽器語音
+let currentAudio = null;
+function play(kind, word) {
+  const w = BY_WORD[word];
+  const text = kind === 'e' ? w?.example?.en : word;
+  if (!text) return;
+  if (currentAudio) currentAudio.pause();
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  const audio = currentAudio = new Audio(`audio/${kind}/${encodeURIComponent(word)}.mp3`);
+  let fellBack = false;
+  const fallback = () => { if (!fellBack) { fellBack = true; speak(text); } };
+  audio.onerror = fallback;
+  audio.play().catch(fallback);
+}
+const SPEAKER_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
+function sayBtn(kind, word, label) {
+  return `<button class="say" data-kind="${kind}" data-word="${esc(word)}" aria-label="${label}">${SPEAKER_SVG}</button>`;
+}
+// 所有喇叭按鈕共用一個點擊處理
+document.addEventListener('click', e => {
+  const b = e.target.closest('.say');
+  if (!b) return;
+  e.stopPropagation();
+  play(b.dataset.kind, b.dataset.word);
+}, true);
+
 function esc(s) {
   return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
@@ -100,11 +125,13 @@ document.querySelectorAll('.seg').forEach(seg => {
   });
 });
 
-PAGES.forEach(p => {
-  $('page-from').add(new Option(p, p));
-  $('page-to').add(new Option(p, p));
-});
-$('page-to').value = PAGES[PAGES.length - 1];
+function fillPageSelects() {
+  ['page-from', 'page-to'].forEach(id => {
+    $(id).innerHTML = '';
+    PAGES.forEach(p => $(id).add(new Option(p, p)));
+  });
+  $('page-to').value = PAGES[PAGES.length - 1];
+}
 
 function refreshHome() {
   $('stat-total').textContent = WORDS.length;
@@ -145,6 +172,7 @@ function renderQuestion() {
   quiz.picked = null;
   $('progress').textContent = `${quiz.i + 1}/${quiz.list.length}`;
   $('word').textContent = q.word;
+  $('btn-say').dataset.word = q.word;
   $('word-sub').textContent = { meaning: '', pos: '選出所有正確的詞性(可複選)', both: '選中文意思,並選出所有詞性' }[quiz.mode];
   $('feedback').innerHTML = '';
   updateStar();
@@ -271,11 +299,11 @@ function finishAnswer(ok, msg = '', hinted = false) {
 
 // 例句,並把單字(含變化形)標粗體
 function exampleHtml(q) {
-  const ex = EXAMPLES[q.word];
+  const ex = q.example;
   if (!ex) return '';
   const stem = q.word.length > 4 ? q.word.replace(/[ey]$/, '') : q.word;
   const re = new RegExp(`\\b(${stem}\\w*)`, 'gi');
-  return `<div class="example"><div class="en">${esc(ex[0]).replace(re, '<b>$1</b>')}</div><div class="zh">${esc(ex[1])}</div></div>`;
+  return `<div class="example">${sayBtn('e', q.word, '唸例句')}<div class="en">${esc(ex.en).replace(re, '<b>$1</b>')}</div><div class="zh">${esc(ex.zh)}</div></div>`;
 }
 
 function next() {
@@ -288,7 +316,7 @@ $('btn-action').onclick = () => {
   if (!quiz.answered) submit();
   else next();
 };
-$('word-card').onclick = () => speak(quiz.list[quiz.i].word);
+$('word-card').onclick = () => play('w', quiz.list[quiz.i].word);
 
 // 提示:直接顯示正確答案與例句,這題算答錯
 $('btn-hint').onclick = () => {
@@ -336,7 +364,7 @@ function showResult() {
     $('btn-retry-wrong').classList.remove('hidden');
     quiz.wrongs.forEach(w => {
       const li = document.createElement('li');
-      li.innerHTML = `<span class="w">${esc(w.word)}</span><span class="m">${esc(w.meaning)}</span>`;
+      li.innerHTML = sayBtn('w', w.word, '唸單字') + `<span class="w">${esc(w.word)}</span><span class="m">${esc(w.meaning)}</span>`;
       ul.appendChild(li);
     });
   }
@@ -358,6 +386,7 @@ function renderWeakList() {
     const r = rec(w.word);
     const li = document.createElement('li');
     li.innerHTML =
+      sayBtn('w', w.word, '唸單字') +
       `<span class="w">${r.star ? '★ ' : ''}${esc(w.word)}</span>` +
       `<span class="m">${esc(w.meaning)}</span>` +
       `<span class="n">錯 ${r.wrong}</span>` +
@@ -376,4 +405,16 @@ $('btn-reset').onclick = () => {
   renderWeakList();
 };
 
-refreshHome();
+async function init() {
+  $('btn-say').innerHTML = SPEAKER_SVG;
+  try {
+    const res = await fetch('data/words.json', { cache: 'no-cache' });
+    setWords(await res.json());
+  } catch {
+    $('home-msg').textContent = '題庫載入失敗,請檢查網路後重新整理';
+    return;
+  }
+  fillPageSelects();
+  refreshHome();
+}
+init();
