@@ -136,3 +136,36 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .example { position: relative; padding-right: 48px; }
 .example .say { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
 .word-list .say { width: 32px; height: 32px; margin: -6px 0 -6px -6px; }
+
+/* 上傳 / 確認新單字 */
+.up-msg { white-space: pre-line; color: #ccc; text-align: center; margin: 18px 0; line-height: 1.6; }
+.up-msg.err { color: #ff8a8a; }
+.txt {
+  width: 100%; background: #333; color: #eee; border: 1px solid #555; border-radius: 8px;
+  font: inherit; font-size: 17px; padding: 10px 12px; -webkit-user-select: text; user-select: text;
+}
+.file-btn { text-align: center; position: relative; overflow: hidden; }
+.file-btn input { position: absolute; inset: 0; opacity: 0; }
+.thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 14px; }
+.thumbs img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; }
+.up-state { text-align: center; font-size: 18px; margin: 24px 0 12px; }
+.bar { height: 10px; background: #333; border-radius: 5px; overflow: hidden; }
+.bar div { height: 100%; width: 0; background: #6f9ad1; transition: width .4s; }
+.pill-btn.wide { width: 240px; }
+.rv-card { background: #2e2e2e; border: 1px solid #3c3c3c; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+.rv-card.off { opacity: .5; }
+.rv-head { display: flex; align-items: center; gap: 8px; }
+.rv-head input[type=checkbox] { width: 24px; height: 24px; flex: none; }
+.rv-head .txt { flex: 1; font-size: 19px; padding: 6px 10px; }
+.rv-head .pg { width: 70px; flex: none; }
+.rv-tag { font-size: 13px; padding: 2px 8px; border-radius: 10px; margin: 8px 6px 0 0; display: inline-block; }
+.rv-tag.warn { background: #5a4a1a; color: #f5c518; }
+.rv-tag.have { background: #2c3e2c; color: #81c784; }
+.rv-sense { display: flex; gap: 6px; margin-top: 8px; }
+.rv-sense select { background: #333; color: #eee; border: 1px solid #555; border-radius: 8px; font-size: 16px; padding: 4px; flex: none; }
+.rv-sense .txt { flex: 1; font-size: 16px; padding: 6px 10px; }
+.rv-sense .x { color: #888; font-size: 18px; padding: 0 8px; }
+.rv-add { color: #8fb6ea; font-size: 14px; padding: 6px 0; }
+.rv-ex { width: 100%; margin-top: 6px; font-size: 14px; padding: 6px 10px; resize: vertical; min-height: 40px; }
+.rv-have { flex: 1; font-size: 17px; color: #aaa; }
+.rv-head .rv-tag { margin: 0; }

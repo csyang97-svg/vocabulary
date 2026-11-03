@@ -51,6 +51,7 @@
       <p id="home-msg" class="msg"></p>
       <button id="btn-start" class="big-btn">開始練習</button>
       <button id="btn-weaklist" class="link-btn">查看不熟單字清單 ›</button>
+      <button id="btn-upload" class="link-btn">新增課本頁(上傳照片)›</button>
     </main>
   </section>
 
@@ -105,6 +106,52 @@
     </main>
   </section>
 
+  <!-- 上傳課本照片 -->
+  <section id="upload" class="screen">
+    <header class="topbar">
+      <button class="icon-btn btn-to-home" aria-label="返回">‹</button>
+      <div class="title">新增課本頁</div>
+      <div class="top-right"></div>
+    </header>
+    <main class="home-body">
+      <p id="up-msg" class="up-msg">連線中…</p>
+      <div id="up-login" class="hidden">
+        <h3>上傳密碼</h3>
+        <input id="up-pw" class="txt" type="password" autocomplete="current-password" placeholder="輸入密碼">
+        <button id="up-pw-ok" class="big-btn">確認</button>
+      </div>
+      <div id="up-form" class="hidden">
+        <p class="msg small">拍課本的單字頁(可以一次拍跨頁),有畫螢光筆的單字會被找出來,確認後加入題庫。一次最多 <span id="up-max">10</span> 張,每張約 30 秒。</p>
+        <label class="big-btn file-btn">選擇照片<input id="up-files" type="file" accept="image/*" multiple></label>
+        <div id="up-thumbs" class="thumbs"></div>
+        <button id="up-go" class="big-btn hidden">開始辨識</button>
+      </div>
+      <div id="up-progress" class="hidden">
+        <p id="up-state" class="up-state"></p>
+        <div class="bar"><div id="up-bar"></div></div>
+        <p class="msg small">可以先離開這個畫面,之後回來「新增課本頁」就會看到結果。</p>
+      </div>
+      <button id="up-resume" class="big-btn secondary hidden">查看上次上傳的結果</button>
+    </main>
+  </section>
+
+  <!-- 確認新單字 -->
+  <section id="review" class="screen">
+    <header class="topbar">
+      <button id="rv-back" class="icon-btn" aria-label="返回">‹</button>
+      <div class="title">確認新單字</div>
+      <div class="top-right"></div>
+    </header>
+    <main class="home-body">
+      <p id="rv-msg" class="msg small"></p>
+      <div id="rv-list"></div>
+    </main>
+    <footer class="quiz-foot">
+      <button id="rv-commit" class="pill-btn wide">加入題庫</button>
+    </footer>
+  </section>
+
   <script src="app.js"></script>
+  <script src="upload.js"></script>
 </body>
 </html>

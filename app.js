@@ -1,7 +1,7 @@
 'use strict';
 
 // ---------- 題庫 ----------
-const POS_LABEL = { n: 'n.', v: 'v.', adj: 'adj.', adv: 'adv.', prep: 'prep.' };
+const POS_LABEL = { n: 'n.', v: 'v.', adj: 'adj.', adv: 'adv.', prep: 'prep.', conj: 'conj.', pron: 'pron.' };
 const POS_CHOICES = ['n', 'v', 'adj', 'adv'];
 
 // 題庫在 data/words.json,啟動時載入(見最下方 init)
