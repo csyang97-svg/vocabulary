@@ -5,17 +5,25 @@ const POS_LABEL = { n: 'n.', v: 'v.', adj: 'adj.', adv: 'adv.', prep: 'prep.', c
 const POS_CHOICES = ['n', 'v', 'adj', 'adv'];
 
 // 題庫在 data/words.json,啟動時載入(見最下方 init)
-let WORDS = [], BY_WORD = {}, PAGES = [];
+// 照課本頁碼(同頁照字母)排好,每 GROUP_SIZE 個字分成一「頁」(GROUPS),複習和考試都用這個分頁
+const GROUP_SIZE = 40;
+let WORDS = [], BY_WORD = {}, GROUPS = [];
 
 function setWords(list) {
+  list = list.slice().sort((a, b) => a.page - b.page || a.word.localeCompare(b.word));
   WORDS = list.map(w => ({
     ...w,
     pos: [...new Set(w.senses.map(s => s.pos))],
     meaning: w.senses.map(s => `${POS_LABEL[s.pos]} ${s.zh}`).join('  '),
   }));
   BY_WORD = Object.fromEntries(WORDS.map(w => [w.word, w]));
-  PAGES = [...new Set(WORDS.map(w => w.page))].sort((a, b) => a - b);
+  GROUPS = [];
+  for (let i = 0; i < WORDS.length; i += GROUP_SIZE) {
+    const words = WORDS.slice(i, i + GROUP_SIZE);
+    GROUPS.push({ n: GROUPS.length + 1, words, from: words[0].page, to: words[words.length - 1].page });
+  }
 }
+function bookPages(g) { return g.from === g.to ? `p.${g.from}` : `p.${g.from}–${g.to}`; }
 
 // ---------- 紀錄(存在瀏覽器 localStorage) ----------
 const STORE_KEY = 'vocab_stats_v1';
@@ -112,49 +120,80 @@ function esc(s) {
 }
 
 // ---------- 首頁 ----------
-const settings = { mode: 'meaning', scope: 'all', count: '20' };
+// scope:'all' 全部、'weak' 不熟,或是選了哪幾頁(陣列,1 開始)。設定記在 localStorage,下次打開一樣
+const HOME_KEY = 'vocab_home_v1';
+const settings = Object.assign({ mode: 'meaning', scope: 'all', count: 'all' },
+  (() => { try { return JSON.parse(localStorage.getItem(HOME_KEY)) || {}; } catch { return {}; } })());
+function saveSettings() { localStorage.setItem(HOME_KEY, JSON.stringify(settings)); }
 
 document.querySelectorAll('.seg').forEach(seg => {
+  seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.value === settings[seg.dataset.name]));
   seg.addEventListener('click', e => {
     const btn = e.target.closest('button');
     if (!btn) return;
     seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn));
     settings[seg.dataset.name] = btn.dataset.value;
-    $('page-range').classList.toggle('hidden', settings.scope !== 'pages');
+    saveSettings();
     $('home-msg').textContent = '';
   });
 });
 
-function fillPageSelects() {
-  ['page-from', 'page-to'].forEach(id => {
-    $(id).innerHTML = '';
-    PAGES.forEach(p => $(id).add(new Option(p, p)));
+function chip(label, sub, on, onclick) {
+  const b = document.createElement('button');
+  b.className = 'chip' + (on ? ' on' : '');
+  b.innerHTML = `${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ''}`;
+  b.onclick = onclick;
+  return b;
+}
+
+function scopePool() {
+  if (settings.scope === 'weak') return weakWords();
+  if (Array.isArray(settings.scope)) return settings.scope.flatMap(n => GROUPS[n - 1]?.words || []);
+  return WORDS;
+}
+
+function renderScopeChips() {
+  if (Array.isArray(settings.scope)) {   // 題庫變動後,不存在的頁拿掉
+    settings.scope = settings.scope.filter(n => n <= GROUPS.length);
+    if (!settings.scope.length) settings.scope = 'all';
+  }
+  const box = $('scope-chips');
+  box.innerHTML = '';
+  const pick = v => { settings.scope = v; saveSettings(); renderScopeChips(); $('home-msg').textContent = ''; };
+  box.appendChild(chip('全部', `${WORDS.length} 字`, settings.scope === 'all', () => pick('all')));
+  box.appendChild(chip('不熟', `${weakWords().length} 字`, settings.scope === 'weak', () => pick('weak')));
+  GROUPS.forEach(g => {
+    const on = Array.isArray(settings.scope) && settings.scope.includes(g.n);
+    box.appendChild(chip(`第 ${g.n} 頁`, bookPages(g), on, () => {
+      const cur = Array.isArray(settings.scope) ? settings.scope : [];
+      const nextSel = on ? cur.filter(n => n !== g.n) : [...cur, g.n].sort((a, b) => a - b);
+      pick(nextSel.length ? nextSel : 'all');
+    }));
   });
-  $('page-to').value = PAGES[PAGES.length - 1];
+  const n = scopePool().length;
+  $('scope-info').textContent = settings.scope === 'all' ? `考全部 ${n} 個字`
+    : settings.scope === 'weak' ? `考不熟的 ${n} 個字`
+    : `已選 第 ${settings.scope.join('、')} 頁,共 ${n} 個字`;
 }
 
 function refreshHome() {
   $('stat-total').textContent = WORDS.length;
   $('stat-weak').textContent = weakWords().length;
   $('home-msg').textContent = '';
+  renderScopeChips();
 }
 
 $('btn-start').onclick = () => {
-  let pool;
-  if (settings.scope === 'weak') {
-    pool = weakWords();
-    if (!pool.length) { $('home-msg').textContent = '目前沒有不熟的單字 👍'; return; }
-  } else if (settings.scope === 'pages') {
-    let from = +$('page-from').value, to = +$('page-to').value;
-    if (from > to) [from, to] = [to, from];
-    pool = WORDS.filter(w => w.page >= from && w.page <= to);
-  } else {
-    pool = WORDS;
+  const pool = scopePool();
+  if (!pool.length) {
+    $('home-msg').textContent = settings.scope === 'weak' ? '目前沒有不熟的單字 👍' : '這個範圍沒有單字';
+    return;
   }
   const n = settings.count === 'all' ? pool.length : Math.min(+settings.count, pool.length);
   startQuiz(weightedPick(pool, n), settings.mode);
 };
-$('btn-weaklist').onclick = () => { renderWeakList(); show('weaklist'); };
+$('btn-browse').onclick = () => openBrowse();
+$('stat-weak-box').onclick = () => openBrowse('weak');
 
 // ---------- 測驗 ----------
 let quiz = null;
@@ -373,36 +412,64 @@ function showResult() {
 $('btn-retry-wrong').onclick = () => startQuiz(quiz.wrongs, quiz.mode);
 $('btn-home').onclick = () => { refreshHome(); show('home'); };
 
-// ---------- 不熟清單 ----------
-function renderWeakList() {
-  const ul = $('weak-list');
+// ---------- 複習單字(每 40 個一頁 + 不熟) ----------
+const BROWSE_KEY = 'vocab_browse_v1';
+let browseSel = localStorage.getItem(BROWSE_KEY) || '1';   // '1'、'2'… 或 'weak'
+
+function openBrowse(sel) {
+  if (sel) browseSel = sel;
+  if (browseSel !== 'weak' && !GROUPS[+browseSel - 1]) browseSel = '1';
+  renderBrowse();
+  show('browse');
+}
+
+function renderBrowse() {
+  localStorage.setItem(BROWSE_KEY, browseSel);
+  const weak = browseSel === 'weak';
+  const box = $('browse-chips');
+  box.innerHTML = '';
+  GROUPS.forEach(g => box.appendChild(chip(`第 ${g.n} 頁`, bookPages(g), browseSel === String(g.n), () => { browseSel = String(g.n); renderBrowse(); })));
+  box.appendChild(chip('不熟', `${weakWords().length} 字`, weak, () => { browseSel = 'weak'; renderBrowse(); }));
+
+  const list = weak ? weakWords() : GROUPS[+browseSel - 1].words;
+  $('browse-info').textContent = weak
+    ? '答錯會自動加入;同一個單字連續答對 3 次會自動移出。點 ✕ 可以手動移除;在其他頁點 ☆ 也可以加進來。'
+    : `第 ${browseSel} 頁:${list.length} 個字(課本 ${bookPages(GROUPS[+browseSel - 1])})。點 ☆ 加入不熟。`;
+  $('btn-reset').classList.toggle('hidden', !weak);
+  $('browse-quiz').classList.toggle('hidden', !list.length);
+  $('browse-quiz').textContent = weak ? `考不熟的單字(${list.length})` : `考這一頁(${list.length})`;
+
+  const ul = $('browse-list');
   ul.innerHTML = '';
-  const list = weakWords();
-  if (!list.length) {
-    ul.innerHTML = '<li class="empty">目前沒有不熟的單字</li>';
-    return;
-  }
+  if (!list.length) { ul.innerHTML = '<li class="empty">目前沒有不熟的單字 👍</li>'; return; }
   list.forEach(w => {
-    const r = rec(w.word);
     const li = document.createElement('li');
     li.innerHTML =
-      sayBtn('w', w.word, '唸單字') +
-      `<span class="w">${r.star ? '★ ' : ''}${esc(w.word)}</span>` +
-      `<span class="m">${esc(w.meaning)}</span>` +
-      `<span class="n">錯 ${r.wrong}</span>` +
-      `<button class="x" aria-label="移除">✕</button>`;
+      `<div class="row">` + sayBtn('w', w.word, '唸單字') +
+      `<span class="w">${esc(w.word)}</span><span class="m">${esc(w.meaning)}</span>` +
+      (weak ? `<span class="n">${rec(w.word).wrong ? '錯 ' + rec(w.word).wrong : '★'}</span><button class="x" aria-label="移除">✕</button>`
+            : `<button class="x st${isWeak(w.word) ? ' on' : ''}" aria-label="加入不熟">${isWeak(w.word) ? '★' : '☆'}</button>`) +
+      `</div>` +
+      (w.example ? `<div class="ex">${sayBtn('e', w.word, '唸例句')}<div><div class="en">${esc(w.example.en)}</div><div class="zh">${esc(w.example.zh)}</div></div></div>` : '');
     li.querySelector('.x').onclick = () => {
-      r.star = false; r.streak = GRADUATE_STREAK; save();
-      renderWeakList();
+      const rr = rec(w.word);
+      if (weak || isWeak(w.word)) { rr.star = false; rr.streak = GRADUATE_STREAK; }   // 移出不熟
+      else rr.star = true;
+      save();
+      renderBrowse();
     };
     ul.appendChild(li);
   });
 }
+$('browse-quiz').onclick = () => {
+  const list = browseSel === 'weak' ? weakWords() : GROUPS[+browseSel - 1].words;
+  startQuiz(list, settings.mode);
+};
 document.querySelectorAll('.btn-to-home').forEach(b => b.onclick = () => { refreshHome(); show('home'); });
 $('btn-reset').onclick = () => {
   if (!confirm('確定要清除所有練習紀錄嗎?')) return;
   stats = {}; save();
-  renderWeakList();
+  renderBrowse();
 };
 
 async function init() {
@@ -414,7 +481,6 @@ async function init() {
     $('home-msg').textContent = '題庫載入失敗,請檢查網路後重新整理';
     return;
   }
-  fillPageSelects();
   refreshHome();
 }
 init();
