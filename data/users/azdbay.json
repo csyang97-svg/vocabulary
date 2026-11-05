@@ -1,1 +1,14 @@
-{"name":"Jason","words":[]}
+{"name":"Jason","words":[
+  {"word":"microscope","page":57,"senses":[{"pos":"n","zh":"顯微鏡","ex":[{"en":"Germs can be seen under/through a microscope.","zh":"透過顯微鏡能看得見細菌。","audio":"5a68de5ced3b"}]}]},
+  {"word":"mild","page":57,"senses":[{"pos":"adj","zh":"溫和的","ex":[{"en":"We've had a mild winter this year.","zh":"今年冬天溫和不很冷。","audio":"377f8c207d7a"}]},{"pos":"adj","zh":"輕微的","ex":[{"en":"He suffered a mild heart attack.","zh":"他輕微的心臟病發作。","audio":"28aef33b7ef4"}]}]},
+  {"word":"miner","page":57,"senses":[{"pos":"n","zh":"礦工","ex":[{"en":"He remained a miner all his working life.","zh":"他一輩子都是礦工。","audio":"9b8f83259bc9"}]}]},
+  {"word":"mineral","page":57,"senses":[{"pos":"n","zh":"礦物","ex":[{"en":"This country is rich in mineral resources.","zh":"該國礦物資源豐富。","audio":"bd939098c635"}]},{"pos":"n","zh":"礦物質","ex":[{"en":"Mineral water is more expensive than gas.","zh":"礦泉水比汽水貴。","audio":"bf78ebd58783"}]}]},
+  {"word":"minister","page":57,"senses":[{"pos":"n","zh":"部長","ex":[{"en":"The Minister of Education is in charge of the Ministry of Education.","zh":"教育部長掌管教育部。","audio":"e4fa16e90672"}]}]},
+  {"word":"ministry","page":57,"senses":[{"pos":"n","zh":"政府部會","ex":[{"en":"The Ministry of Defense is responsible for implementing defense policy.","zh":"國防部負責實施國防政策。","audio":"05265b393da8"}]}]},
+  {"word":"mischief","page":58,"senses":[{"pos":"n","zh":"惡作劇,搗蛋","ex":[{"en":"I hope you were not up to any mischief while I was away.","zh":"希望我不在時你沒搗蛋。","audio":"760ac88ee548"}]}]},
+  {"word":"miserable","page":58,"senses":[{"pos":"adj","zh":"悲惨的,不幸的","ex":[{"en":"He's been miserable living on his own since his wife died.","zh":"自從他太太死後，他一直獨居過著悲慘的生活。","audio":"19f5532e183a"}]}]},
+  {"word":"moderate","page":58,"senses":[{"pos":"adj","zh":"中等的","ex":[{"en":"The company was of moderate size, with about 50 employees.","zh":"這家公司中等規模，約50個員工。","audio":"039431e22cd8"}]},{"pos":"adj","zh":"適度的","ex":[{"en":"He's a moderate drinker.","zh":"他喝酒有節制。","audio":"fa9531b0d5d8"}]}]},
+  {"word":"modest","page":58,"senses":[{"pos":"adj","zh":"謙虛的","ex":[{"en":"Though an outstanding scientist, he's a modest man.","zh":"他雖是傑出科學家，但是他很謙虛。","audio":"9567cc8248b7"},{"en":"He's got a modest increase in salary.","zh":"","audio":"c8d0692c0ae3"}]}]},
+  {"word":"modesty","page":58,"senses":[{"pos":"n","zh":"謙遜","ex":[{"en":"The player's modesty and sportsmanship makes him a fan favorite.","zh":"那球員的謙虛和運動精神使他成為球迷的最愛。","audio":"4ec9fe3a66ec"}]}]},
+  {"word":"monument","page":58,"senses":[{"pos":"n","zh":"紀念碑","ex":[{"en":"In the square stands a monument to all the people killed in the war.","zh":"廣場上矗立著一座紀念在戰爭中喪生的人們的紀念碑。","audio":"31cfd1bd683f"}]}]}
+]}
