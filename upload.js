@@ -3,7 +3,7 @@
 // 伺服器在家裡電腦(turn_on_vocab_server.bat),網址每次啟動都會變,寫在 repo 的 server.json。
 // 用 GitHub API 讀 server.json(GitHub Pages 有快取,剛換的網址要等好幾分鐘)。
 const SERVER_JSON_API = 'https://api.github.com/repos/csyang97-svg/vocabulary/contents/server.json';
-const PW_KEY = 'vocab_upload_pw', JOB_KEY = 'vocab_upload_job';
+const JOB_KEY = 'vocab_upload_job_' + UID;   // 登入憑證見 app.js 的 authOf()
 const MAX_SIDE = 2400;               // 上傳前在手機上縮小,長邊最多 2400px
 const REVIEW_POS = ['n', 'v', 'adj', 'adv', 'prep', 'conj'];
 
@@ -33,7 +33,7 @@ async function findServer() {
 async function api(path, opts = {}) {
   const r = await fetch(server.url + path, {
     ...opts,
-    headers: { ...(opts.headers || {}), 'X-Password': localStorage.getItem(PW_KEY) || '' },
+    headers: { ...(opts.headers || {}), 'X-User': UID || '', 'X-Token': authOf().token || '' },
   });
   let d = {};
   try { d = await r.json(); } catch {}
@@ -65,10 +65,10 @@ async function openUpload() {
     upMsg('家裡電腦目前沒有開上傳服務。\n(電腦上執行 turn_on_vocab_server.bat 後,約 1 分鐘再試)', true);
     return;
   }
-  if (!localStorage.getItem(PW_KEY)) { upMsg(''); upShow('up-login'); return; }
-  try { await api('/api/login', { method: 'POST' }); }
+  if (!authOf().token) { upMsg(''); showUpLogin(); return; }
+  try { await api('/api/me'); }
   catch (e) {
-    if (e.status === 401) { localStorage.removeItem(PW_KEY); upMsg('密碼不對,請重新輸入', true); upShow('up-login'); return; }
+    if (e.status === 401) { setAuth(UID, { name: authOf().name }); upMsg('請重新登入', true); showUpLogin(); return; }
     upMsg(e.message, true); return;
   }
   const jid = localStorage.getItem(JOB_KEY);
@@ -83,12 +83,23 @@ async function openUpload() {
   upShow('up-form');
 }
 
+// 上傳要登入(暱稱 + 密碼),而且只能上傳到自己的題庫
+function showUpLogin() {
+  $('up-name').value = authOf().name || $('who').textContent || '';
+  upShow('up-login');
+}
 $('up-pw-ok').onclick = async () => {
-  const pw = $('up-pw').value.trim();
-  if (!pw) return;
-  localStorage.setItem(PW_KEY, pw);
-  $('up-pw').value = '';
-  openUpload();
+  const name = $('up-name').value.trim(), password = $('up-pw').value;
+  if (!name || !password) return;
+  try {
+    const r = await fetch(server.url + '/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, password }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { upMsg(d.detail || '登入失敗', true); return; }
+    if (d.id !== UID) { upMsg(`這是「${$('who').textContent}」的題庫,只能用這個暱稱登入上傳。要用自己的題庫請按首頁右上角「切換」。`, true); return; }
+    setAuth(UID, { name: d.name, token: d.token });
+    $('up-pw').value = '';
+    openUpload();
+  } catch { upMsg('連不到家裡電腦', true); }
 };
 
 function resetForm() {

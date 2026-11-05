@@ -1,10 +1,34 @@
 'use strict';
 
+// ---------- 使用者(多人版) ----------
+// 每個人有自己的題庫 data/users/<id>.json = {name, words}。網址 ?u=<id> 打開就記住是誰,之後不帶也可以。
+// 這支手機現在是誰:localStorage vocab_user;登入憑證(上傳用)存在 vocab_auth_<id> = {name, token}
+const USER_KEY = 'vocab_user';
+const LEGACY_UID = 'ss844w';   // 多人版以前的練習紀錄(vocab_stats_v1 等)歸給第一個使用者
+const urlUid = new URLSearchParams(location.search).get('u');
+if (urlUid && /^[a-z0-9]{6}$/.test(urlUid)) localStorage.setItem(USER_KEY, urlUid);
+// 用過多人版以前的網頁(有舊的練習紀錄或上傳密碼)→ 就是第一個使用者
+if (!localStorage.getItem(USER_KEY) && LEGACY_UID &&
+    ['vocab_stats_v1', 'vocab_home_v1', 'vocab_browse_v1', 'vocab_upload_pw'].some(k => localStorage.getItem(k) != null)) {
+  localStorage.setItem(USER_KEY, LEGACY_UID);
+  localStorage.removeItem('vocab_upload_pw');
+}
+const UID = localStorage.getItem(USER_KEY);
+function authOf(uid = UID) { try { return JSON.parse(localStorage.getItem('vocab_auth_' + uid)) || {}; } catch { return {}; } }
+function setAuth(uid, a) { localStorage.setItem('vocab_auth_' + uid, JSON.stringify(a)); }
+if (UID && UID === LEGACY_UID) {   // 舊的練習紀錄搬過來(只做一次)
+  for (const k of ['stats', 'home', 'browse']) {
+    const old = localStorage.getItem(`vocab_${k}_v1`);
+    if (old != null && localStorage.getItem(`vocab_${k}_${UID}`) == null) localStorage.setItem(`vocab_${k}_${UID}`, old);
+    localStorage.removeItem(`vocab_${k}_v1`);
+  }
+}
+
 // ---------- 題庫 ----------
 const POS_LABEL = { n: 'n.', v: 'v.', adj: 'adj.', adv: 'adv.', prep: 'prep.', conj: 'conj.', pron: 'pron.' };
 const POS_CHOICES = ['n', 'v', 'adj', 'adv'];
 
-// 題庫在 data/words.json,啟動時載入(見最下方 init)
+// 題庫在 data/users/<id>.json,啟動時載入(見最下方 init)
 // 每個字:{word, page, senses:[{pos, zh, ex:[{en, zh, audio}]}]},課本上每個意思和它的例句(audio 是例句音檔 audio/e/<audio>.mp3)
 // 照課本頁碼(同頁照字母)排好,每 GROUP_SIZE 個字分成一「頁」(GROUPS),複習和考試都用這個分頁
 const GROUP_SIZE = 40;
@@ -28,7 +52,7 @@ function setWords(list) {
 function bookPages(g) { return g.from === g.to ? `p.${g.from}` : `p.${g.from}–${g.to}`; }
 
 // ---------- 紀錄(存在瀏覽器 localStorage) ----------
-const STORE_KEY = 'vocab_stats_v1';
+const STORE_KEY = 'vocab_stats_' + UID;
 const GRADUATE_STREAK = 3; // 連續答對幾次自動移出不熟清單
 let stats = load();
 
@@ -125,7 +149,7 @@ function esc(s) {
 
 // ---------- 首頁 ----------
 // scope:'all' 全部、'weak' 不熟,或是選了哪幾頁(陣列,1 開始)。設定記在 localStorage,下次打開一樣
-const HOME_KEY = 'vocab_home_v1';
+const HOME_KEY = 'vocab_home_' + UID;
 const settings = Object.assign({ mode: 'meaning', scope: 'all', count: 'all' },
   (() => { try { return JSON.parse(localStorage.getItem(HOME_KEY)) || {}; } catch { return {}; } })());
 function saveSettings() { localStorage.setItem(HOME_KEY, JSON.stringify(settings)); }
@@ -190,7 +214,8 @@ function refreshHome() {
 $('btn-start').onclick = () => {
   const pool = scopePool();
   if (!pool.length) {
-    $('home-msg').textContent = settings.scope === 'weak' ? '目前沒有不熟的單字 👍' : '這個範圍沒有單字';
+    $('home-msg').textContent = !WORDS.length ? '還沒有單字,先按下面「新增課本頁」上傳課本照片'
+      : settings.scope === 'weak' ? '目前沒有不熟的單字 👍' : '這個範圍沒有單字';
     return;
   }
   const n = settings.count === 'all' ? pool.length : Math.min(+settings.count, pool.length);
@@ -434,12 +459,12 @@ $('btn-retry-wrong').onclick = () => startQuiz(quiz.wrongs, quiz.mode);
 $('btn-home').onclick = () => { refreshHome(); show('home'); };
 
 // ---------- 複習單字(每 40 個一頁 + 不熟) ----------
-const BROWSE_KEY = 'vocab_browse_v1';
+const BROWSE_KEY = 'vocab_browse_' + UID;
 let browseSel = localStorage.getItem(BROWSE_KEY) || '1';   // '1'、'2'… 或 'weak'
 
 function openBrowse(sel) {
   if (sel) browseSel = sel;
-  if (browseSel !== 'weak' && !GROUPS[+browseSel - 1]) browseSel = '1';
+  if (browseSel !== 'weak' && !GROUPS[+browseSel - 1]) browseSel = GROUPS.length ? '1' : 'weak';
   renderBrowse();
   show('browse');
 }
@@ -466,7 +491,7 @@ function renderBrowse() {
 
   const ul = $('browse-list');
   ul.innerHTML = '';
-  if (!list.length) { ul.innerHTML = '<li class="empty">目前沒有不熟的單字 👍</li>'; return; }
+  if (!list.length) { ul.innerHTML = `<li class="empty">${WORDS.length ? '目前沒有不熟的單字 👍' : '還沒有單字,先上傳課本照片'}</li>`; return; }
   list.forEach(w => {
     const li = document.createElement('li');
     li.innerHTML =
@@ -499,15 +524,75 @@ $('btn-reset').onclick = () => {
   renderBrowse();
 };
 
+// ---------- 歡迎(建立題庫 / 登入) ----------
+// 建立和登入都要家裡電腦開著(findServer 在 upload.js);之後練習只需要 GitHub Pages
+function showWelcome(msg = '') {
+  $('wl-msg').textContent = msg;
+  show('welcome');
+}
+async function welcomeCall(path, body) {
+  $('wl-msg').textContent = '連線到家裡電腦…';
+  const srv = await findServer();
+  if (!srv) { $('wl-msg').textContent = '家裡電腦目前沒有開服務,請稍後再試。'; return; }
+  try {
+    const r = await fetch(srv.url + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { $('wl-msg').textContent = d.detail || `伺服器錯誤(${r.status})`; return; }
+    setAuth(d.id, { name: d.name, token: d.token });
+    localStorage.setItem(USER_KEY, d.id);
+    if (path === '/api/register') localStorage.setItem('vocab_new_' + d.id, '1');
+    location.replace(location.pathname + '?u=' + d.id);
+  } catch { $('wl-msg').textContent = '連不到家裡電腦,請稍後再試。'; }
+}
+$('wl-reg').onclick = () => {
+  const name = $('wl-name').value.trim(), password = $('wl-pw').value, invite = $('wl-invite').value.trim();
+  if (!name || !password || !invite) { $('wl-msg').textContent = '暱稱、密碼、邀請碼都要填'; return; }
+  welcomeCall('/api/register', { name, password, invite });
+};
+$('li-go').onclick = () => {
+  const name = $('li-name').value.trim(), password = $('li-pw').value;
+  if (!name || !password) { $('wl-msg').textContent = '請填暱稱和密碼'; return; }
+  welcomeCall('/api/login', { name, password });
+};
+$('btn-switch').onclick = () => {
+  if (!confirm('切換到別人的題庫?(你的練習紀錄會留在這支手機上)')) return;
+  localStorage.removeItem(USER_KEY);
+  location.replace(location.pathname);
+};
+function myUrl() { return location.origin + location.pathname + '?u=' + UID; }
+$('btn-myurl').onclick = async () => {
+  try { await navigator.clipboard.writeText(myUrl()); $('btn-myurl').textContent = '已複製 ✓'; }
+  catch { prompt('我的專屬網址:', myUrl()); }
+};
+
 async function init() {
   $('btn-say').innerHTML = SPEAKER_SVG;
+  if (!UID) { showWelcome(); return; }
+  show('home');
+  let bank;
   try {
-    const res = await fetch('data/words.json', { cache: 'no-cache' });
-    setWords(await res.json());
+    const res = await fetch(`data/users/${UID}.json`, { cache: 'no-cache' });
+    if (res.status === 404) {
+      localStorage.removeItem(USER_KEY);
+      showWelcome('找不到這個題庫(網址可能打錯了),請重新登入。');
+      return;
+    }
+    bank = await res.json();
+    setWords(bank.words);
   } catch {
     $('home-msg').textContent = '題庫載入失敗,請檢查網路後重新整理';
     return;
   }
+  $('who').textContent = bank.name;
+  $('my-url').textContent = myUrl();
   refreshHome();
+  if (localStorage.getItem('vocab_new_' + UID)) {   // 剛建立:提醒存網址
+    localStorage.removeItem('vocab_new_' + UID);
+    $('home-note').textContent = '題庫建立好了!請把這個網頁「加入主畫面」,或複製下面的專屬網址,之後打開就是你的題庫。\n接著按「新增課本頁」上傳課本照片。';
+    $('home-note').classList.remove('hidden');
+  } else if (!WORDS.length) {
+    $('home-note').textContent = '還沒有單字,先按下面「新增課本頁」上傳課本照片。';
+    $('home-note').classList.remove('hidden');
+  }
 }
 init();

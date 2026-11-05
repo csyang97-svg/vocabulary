@@ -15,8 +15,9 @@
 </head>
 <body>
   <!-- 首頁 -->
-  <section id="home" class="screen active">
-    <header class="topbar"><div class="title">英文單字練習</div></header>
+  <section id="home" class="screen">
+    <header class="topbar"><div class="title">英文單字練習</div>
+      <div class="top-right who-box"><span id="who"></span><button id="btn-switch" class="link-btn small">切換</button></div></header>
     <main class="home-body">
       <div class="stats">
         <div><span id="stat-total">0</span><small>全部單字</small></div>
@@ -42,10 +43,31 @@
         <button data-value="all" class="on">全部</button>
       </div>
 
+      <p id="home-note" class="up-msg hidden"></p>
       <p id="home-msg" class="msg"></p>
       <button id="btn-start" class="big-btn">開始練習</button>
       <button id="btn-browse" class="big-btn secondary">複習單字</button>
       <button id="btn-upload" class="link-btn">新增課本頁(上傳照片)›</button>
+      <p class="my-url msg small">我的專屬網址:<span id="my-url"></span> <button id="btn-myurl" class="link-btn small">複製</button></p>
+    </main>
+  </section>
+
+  <!-- 歡迎:建立題庫 / 登入 -->
+  <section id="welcome" class="screen">
+    <header class="topbar"><div class="title">英文單字練習</div></header>
+    <main class="home-body">
+      <p class="up-msg">每個人有自己的題庫:拍自己課本上畫螢光筆的單字,練習紀錄也分開。</p>
+      <p id="wl-msg" class="msg"></p>
+      <h3>第一次使用:建立我的題庫</h3>
+      <input id="wl-name" class="txt" maxlength="20" autocomplete="username" placeholder="暱稱(不要用全名)">
+      <input id="wl-pw" class="txt" type="password" autocomplete="new-password" placeholder="密碼(換手機時要用)">
+      <input id="wl-invite" class="txt" autocapitalize="off" autocomplete="off" placeholder="邀請碼">
+      <button id="wl-reg" class="big-btn">建立</button>
+      <h3>已經有題庫(換手機、重新登入)</h3>
+      <input id="li-name" class="txt" maxlength="20" autocomplete="username" placeholder="暱稱">
+      <input id="li-pw" class="txt" type="password" autocomplete="current-password" placeholder="密碼">
+      <button id="li-go" class="big-btn secondary">登入</button>
+      <p class="msg small">建立和登入時,家裡的電腦要開著;之後練習就不需要了。</p>
     </main>
   </section>
 
@@ -112,15 +134,29 @@
     <main class="home-body">
       <p id="up-msg" class="up-msg">連線中…</p>
       <div id="up-login" class="hidden">
-        <h3>上傳密碼</h3>
-        <input id="up-pw" class="txt" type="password" autocomplete="current-password" placeholder="輸入密碼">
-        <button id="up-pw-ok" class="big-btn">確認</button>
+        <h3>登入後才能上傳</h3>
+        <input id="up-name" class="txt" maxlength="20" autocomplete="username" placeholder="暱稱">
+        <input id="up-pw" class="txt" type="password" autocomplete="current-password" placeholder="密碼">
+        <button id="up-pw-ok" class="big-btn">登入</button>
       </div>
       <div id="up-form" class="hidden">
-        <p class="msg small">拍課本的單字頁(可以一次拍跨頁),有畫螢光筆的單字會被找出來,確認後加入題庫。一次最多 <span id="up-max">10</span> 張,每張約 30 秒。</p>
+        <p class="msg small">拍課本的單字頁(可以一次拍跨頁),有畫螢光筆的單字會被找出來,確認後加入題庫。一次最多 <span id="up-max">10</span> 張,每張約 1–2 分鐘。</p>
         <label class="big-btn file-btn">選擇照片<input id="up-files" type="file" accept="image/*" multiple></label>
         <div id="up-thumbs" class="thumbs"></div>
         <button id="up-go" class="big-btn hidden">開始辨識</button>
+        <div class="up-guide">
+          <h3>照片要怎麼拍</h3>
+          <a href="img/sample-photo.jpg" target="_blank"><img src="img/sample-photo.jpg" alt="課本照片範例" loading="lazy"></a>
+          <p class="cap">範例:攤開的左右兩頁一起拍,有畫螢光筆的單字(例如 infection、inflation、insert)會被找出來(點照片可以放大)</p>
+          <ol>
+            <li>先用<b>螢光筆</b>把要背的單字畫起來(畫在左邊那一欄的英文單字上)。</li>
+            <li>課本<b>攤平</b>,手機從<b>正上方</b>拍,不要斜斜的。</li>
+            <li>從左邊的英文單字到最右邊的<b>中文意思</b>都要拍進去,下面的<b>頁碼</b>也要拍到。</li>
+            <li>光線要夠,避開陰影和反光;拍完放大看看,<b>例句的字要看得清楚</b>。</li>
+            <li>可以一次拍左右兩頁,一次最多 10 張。</li>
+            <li>辨識完會讓你檢查每個單字的意思和例句,確認後才加入題庫。</li>
+          </ol>
+        </div>
       </div>
       <div id="up-progress" class="hidden">
         <p id="up-state" class="up-state"></p>
