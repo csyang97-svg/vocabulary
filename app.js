@@ -531,22 +531,39 @@ function showWelcome(msg = '') {
   show('welcome');
 }
 async function welcomeCall(path, body) {
-  $('wl-msg').textContent = '連線到家裡電腦…';
+  const msgEl = $(path === '/api/register' ? 'wl-reg-msg' : 'wl-msg');
+  const say = t => { msgEl.textContent = t; };
+  say('連線到家裡電腦…');
   const srv = await findServer();
-  if (!srv) { $('wl-msg').textContent = '家裡電腦目前沒有開服務,請稍後再試。'; return; }
+  if (!srv) { say('家裡電腦目前沒有開服務,請稍後再試。'); return; }
   try {
     const r = await fetch(srv.url + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok) { $('wl-msg').textContent = d.detail || `伺服器錯誤(${r.status})`; return; }
+    if (!r.ok) { say(d.detail || `伺服器錯誤(${r.status})`); return; }
     setAuth(d.id, { name: d.name, token: d.token });
     localStorage.setItem(USER_KEY, d.id);
     if (path === '/api/register') localStorage.setItem('vocab_new_' + d.id, '1');
     location.replace(location.pathname + '?u=' + d.id);
-  } catch { $('wl-msg').textContent = '連不到家裡電腦,請稍後再試。'; }
+  } catch { say('連不到家裡電腦,請稍後再試。'); }
 }
+// 登入在上面;按「建立帳號」才展開建立的欄位
+$('wl-new').onclick = () => {
+  $('wl-new-box').classList.add('hidden');
+  $('wl-reg-box').classList.remove('hidden');
+  $('wl-msg').textContent = '';
+  $('wl-name').focus();
+};
+$('wl-cancel').onclick = () => {
+  $('wl-reg-box').classList.add('hidden');
+  $('wl-new-box').classList.remove('hidden');
+  $('wl-msg').textContent = '';
+};
 $('wl-reg').onclick = () => {
   const name = $('wl-name').value.trim(), password = $('wl-pw').value, invite = $('wl-invite').value.trim();
-  if (!name || !password || !invite) { $('wl-msg').textContent = '暱稱、密碼、邀請碼都要填'; return; }
+  const say = t => { $('wl-reg-msg').textContent = t; };
+  if (!name || !password || !$('wl-pw2').value || !invite) { say('暱稱、密碼、確認密碼、邀請碼都要填'); return; }
+  if (password.length < 4) { say('密碼要 4 個字以上'); return; }
+  if (password !== $('wl-pw2').value) { say('兩次輸入的密碼不一樣,請再確認'); $('wl-pw2').value = ''; $('wl-pw2').focus(); return; }
   welcomeCall('/api/register', { name, password, invite });
 };
 $('li-go').onclick = () => {

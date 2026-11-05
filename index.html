@@ -57,17 +57,26 @@
     <header class="topbar"><div class="title">英文單字練習</div></header>
     <main class="home-body">
       <p class="up-msg">每個人有自己的題庫:拍自己課本上畫螢光筆的單字,練習紀錄也分開。</p>
-      <p id="wl-msg" class="msg"></p>
-      <h3>第一次使用:建立我的題庫</h3>
-      <input id="wl-name" class="txt" maxlength="20" autocomplete="username" placeholder="暱稱(不要用全名)">
-      <input id="wl-pw" class="txt" type="password" autocomplete="new-password" placeholder="密碼(換手機時要用)">
-      <input id="wl-invite" class="txt" autocapitalize="off" autocomplete="off" placeholder="邀請碼">
-      <button id="wl-reg" class="big-btn">建立</button>
-      <h3>已經有題庫(換手機、重新登入)</h3>
+      <h3>登入</h3>
       <input id="li-name" class="txt" maxlength="20" autocomplete="username" placeholder="暱稱">
       <input id="li-pw" class="txt" type="password" autocomplete="current-password" placeholder="密碼">
-      <button id="li-go" class="big-btn secondary">登入</button>
-      <p class="msg small">建立和登入時,家裡的電腦要開著;之後練習就不需要了。</p>
+      <button id="li-go" class="big-btn">登入</button>
+      <p id="wl-msg" class="msg"></p>
+      <div id="wl-new-box">
+        <p class="msg small center">還沒有題庫?</p>
+        <button id="wl-new" class="big-btn secondary">建立帳號</button>
+      </div>
+      <div id="wl-reg-box" class="hidden">
+        <h3>建立帳號</h3>
+        <input id="wl-name" class="txt" maxlength="20" autocomplete="username" placeholder="暱稱(不要用全名)">
+        <input id="wl-pw" class="txt" type="password" autocomplete="new-password" placeholder="密碼(4 個字以上,換手機時要用)">
+        <input id="wl-pw2" class="txt" type="password" autocomplete="new-password" placeholder="確認密碼(再輸入一次)">
+        <input id="wl-invite" class="txt" autocapitalize="off" autocomplete="off" placeholder="邀請碼">
+        <p id="wl-reg-msg" class="msg"></p>
+        <button id="wl-reg" class="big-btn">建立</button>
+        <button id="wl-cancel" class="link-btn">取消</button>
+      </div>
+      <p class="msg small wl-foot">建立和登入時,家裡的電腦要開著;之後練習就不需要了。</p>
     </main>
   </section>
 
