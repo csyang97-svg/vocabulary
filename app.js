@@ -227,7 +227,9 @@ $('stat-weak-box').onclick = () => openBrowse('weak');
 // ---------- 測驗 ----------
 let quiz = null;
 
+let autoNext = null;   // 答對後自動下一題的計時器
 function startQuiz(list, mode) {
+  clearTimeout(autoNext);
   quiz = { list: shuffle(list), mode, i: 0, correct: 0, wrongs: [], answered: false, selected: new Set(), picked: new Set() };
   show('quiz');
   renderQuestion();
@@ -373,6 +375,13 @@ function finishAnswer(ok, msg = '', hinted = false) {
   if (ok) quiz.correct++;
   else quiz.wrongs.push(q);
   updateStar();
+  if (ok && !hinted) {   // 答對:短暫顯示 ✔ 就自動下一題,不顯示例句
+    $('feedback').innerHTML = '<span class="ok">✔ 答對了</span>';
+    $('btn-action').classList.add('hidden');
+    const cur = quiz;
+    autoNext = setTimeout(() => { if (quiz === cur && $('quiz').classList.contains('active')) next(); }, 700);
+    return;
+  }
   const head = hinted
     ? '<span class="hint-tag">正確答案(看提示算答錯,已加入不熟單字)</span>'
     : ok ? '<span class="ok">✔ 答對了</span>' : `<span class="ng">✘ 答錯了${msg}</span>`;
@@ -426,12 +435,13 @@ $('btn-star').onclick = () => {
 };
 
 $('btn-end').onclick = () => {
+  clearTimeout(autoNext);
   if (quiz.i === 0 && !quiz.answered) { refreshHome(); show('home'); return; }
   // 已作答的題目才算進結果
   quiz.list = quiz.list.slice(0, quiz.i + (quiz.answered ? 1 : 0));
   showResult();
 };
-$('btn-back').onclick = () => { refreshHome(); show('home'); };
+$('btn-back').onclick = () => { clearTimeout(autoNext); refreshHome(); show('home'); };
 
 // ---------- 結果 ----------
 function showResult() {
