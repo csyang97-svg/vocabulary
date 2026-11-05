@@ -202,7 +202,7 @@
   {"word":"lousy","page":54,"senses":[{"pos":"adj","zh":"很糟的","ex":[{"en":"What lousy food they serve at this beach resort!","zh":"這個海邊度假中心供應的食物真是糟透了！","audio":"98f8537fc6de"}]}]},
   {"word":"magnetic","page":55,"senses":[{"pos":"adj","zh":"有磁性的","ex":[{"en":"The magnetic field of our planet is made by swirling motions of molten iron in Earth's outer core.","zh":"地球磁場是由地球外核熔融的流動週期造成。","audio":"69979bb260cf"}]}]},
   {"word":"manual","page":55,"senses":[{"pos":"adj","zh":"體力的,勞動的","ex":[{"en":"He's willing to do low-paid manual jobs.","zh":"他願做低薪資體力勞動的工作。","audio":"5802d18ac4c5"}]},{"pos":"n","zh":"手冊,說明書,使用手冊","ex":[]}]},
-  {"word":"manufacture","page":55,"senses":[{"pos":"v","zh":"製造,大量製造","ex":[{"en":"This car was designed and manufactured in Italy.","zh":"這輛車在義大利設計製造。","audio":"03b251f1da2c"}]}]},
+  {"word":"manufacture","page":55,"senses":[{"pos":"v","zh":"製造,大量製造","ex":[{"en":"This car was designed and manufactured in Italy.","zh":"這輛車在義大利設計製造。","audio":"03b251f1da2c"}]},{"pos":"v","zh":"捏造","ex":[]}]},
   {"word":"marathon","page":55,"senses":[{"pos":"n","zh":"馬拉松比賽,耐力比賽","ex":[{"en":"A marathon runner has to be able to keep running for 42.195 kilometers, without any intermediate supply of water and food.","zh":"一位馬拉松跑者要能連續跑 42.195 公里，期間接受最少量的食物和水供應。","audio":"0210cb0a3b6e"}]}]},
   {"word":"margin","page":55,"senses":[{"pos":"n","zh":"邊界,邊緣,留好空白以容納註記","ex":[{"en":"Use double spacing and wide margins to leave room for comments.","zh":"隔行，留寬邊，才好留空白寫註記。","audio":"7db3f84fff39"}]}]},
   {"word":"measurable","page":56,"senses":[{"pos":"adj","zh":"可測量的","ex":[{"en":"He has made measurable improvements in his English.","zh":"他的英文有明顯的進步。","audio":"3ef8657dba11"}]}]},
