@@ -59,7 +59,7 @@ $('btn-upload').onclick = openUpload;
 async function openUpload() {
   show('upload');
   upShow(null);
-  upMsg('連線到家裡電腦…');
+  upMsg('連線中…');
   server = await findServer();
   if (!server) {
     upMsg('家裡電腦目前沒有開上傳服務。\n(電腦上執行 turn_on_vocab_server.bat 後,約 1 分鐘再試)', true);

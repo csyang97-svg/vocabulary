@@ -543,7 +543,7 @@ function showWelcome(msg = '') {
 async function welcomeCall(path, body) {
   const msgEl = $(path === '/api/register' ? 'wl-reg-msg' : 'wl-msg');
   const say = t => { msgEl.textContent = t; };
-  say('連線到家裡電腦…');
+  say('連線中…');
   const srv = await findServer();
   if (!srv) { say('家裡電腦目前沒有開服務,請稍後再試。'); return; }
   try {
