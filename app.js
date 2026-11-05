@@ -492,7 +492,16 @@ function finishAnswer(ok, msg = '', hinted = false) {
   const head = hinted
     ? '<span class="hint-tag">正確答案(看提示算答錯,已加入不熟單字)</span>'
     : ok ? '<span class="ok">✔ 答對了</span>' : `<span class="ng">✘ 答錯了${msg}</span>`;
-  $('feedback').innerHTML = head + `<div class="answer">${esc(q.word)}</div>` + sensesHtml(q);
+  // 簡單解答一行;例句放在「詳解」裡,按了才展開(下一題按鈕才不會被擠到下面)
+  const brief = q.senses.map(s => `<span class="pos">${POS_LABEL[s.pos]}</span> ${esc(s.zh)}`).join('<span class="sep">;</span>');
+  $('feedback').innerHTML = head + `<div class="answer">${esc(q.word)} <span class="brief">${brief}</span></div>` +
+    `<button class="link-btn detail-btn">看詳解(例句)▾</button><div class="detail hidden">${sensesHtml(q)}</div>`;
+  $('feedback').querySelector('.detail-btn').onclick = e => {
+    const d = $('feedback').querySelector('.detail');
+    d.classList.toggle('hidden');
+    e.target.textContent = d.classList.contains('hidden') ? '看詳解(例句)▾' : '收起詳解▴';
+  };
+  requestAnimationFrame(() => $('feedback').scrollIntoView({ block: 'end', behavior: 'smooth' }));   // 解答捲到下一題按鈕上面
   $('btn-action').textContent = quiz.i + 1 < quiz.list.length ? '下一題' : '看結果';
   $('btn-action').classList.remove('hidden');
 }
