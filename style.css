@@ -214,3 +214,7 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .msg.small.center { text-align: center; margin-top: 26px; }
 #welcome #wl-msg:empty, #welcome #wl-reg-msg:empty { margin: 0; min-height: 0; }
 #welcome .wl-foot { margin-top: 22px; }
+body:not(.viewing) .only-view, body.viewing .no-view { display: none !important; }
+.view-bar { background: #2f3a4f; border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: #dfe6f3; }
+.people-list { list-style: none; padding: 0; margin: 12px 0; }
+.people-list .person { width: 100%; text-align: left; padding: 14px 16px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #444; background: #2b2b2b; color: inherit; font-size: 18px; }

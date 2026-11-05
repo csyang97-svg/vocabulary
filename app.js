@@ -5,8 +5,18 @@
 // 這支手機現在是誰:localStorage vocab_user;登入憑證(上傳用)存在 vocab_auth_<id> = {name, token}
 const USER_KEY = 'vocab_user';
 const LEGACY_UID = 'ss844w';   // 多人版以前的練習紀錄(vocab_stats_v1 等)歸給第一個使用者
-const urlUid = new URLSearchParams(location.search).get('u');
-if (urlUid && /^[a-z0-9]{6}$/.test(urlUid)) localStorage.setItem(USER_KEY, urlUid);
+function authOf(uid = UID) { try { return JSON.parse(localStorage.getItem('vocab_auth_' + uid)) || {}; } catch { return {}; } }
+function setAuth(uid, a) { localStorage.setItem('vocab_auth_' + uid, JSON.stringify(a)); }
+// 看別人的題庫:?view=<id>(唯讀,練習紀錄不保存);已經登入的人打開別人的 ?u= 也當成看
+const params = new URLSearchParams(location.search);
+const okId = id => /^[a-z0-9]{6}$/.test(id || '');
+let VIEW = okId(params.get('view')) ? params.get('view') : null;
+const urlUid = params.get('u');
+if (okId(urlUid)) {
+  const cur = localStorage.getItem(USER_KEY);
+  if (cur && cur !== urlUid && authOf(cur).token) VIEW = urlUid;
+  else localStorage.setItem(USER_KEY, urlUid);
+}
 // 用過多人版以前的網頁(有舊的練習紀錄或上傳密碼)→ 就是第一個使用者
 if (!localStorage.getItem(USER_KEY) && LEGACY_UID &&
     ['vocab_stats_v1', 'vocab_home_v1', 'vocab_browse_v1', 'vocab_upload_pw'].some(k => localStorage.getItem(k) != null)) {
@@ -14,8 +24,8 @@ if (!localStorage.getItem(USER_KEY) && LEGACY_UID &&
   localStorage.removeItem('vocab_upload_pw');
 }
 const UID = localStorage.getItem(USER_KEY);
-function authOf(uid = UID) { try { return JSON.parse(localStorage.getItem('vocab_auth_' + uid)) || {}; } catch { return {}; } }
-function setAuth(uid, a) { localStorage.setItem('vocab_auth_' + uid, JSON.stringify(a)); }
+if (VIEW === UID) VIEW = null;
+const BANK_UID = VIEW || UID;   // 現在顯示誰的題庫
 if (UID && UID === LEGACY_UID) {   // 舊的練習紀錄搬過來(只做一次)
   for (const k of ['stats', 'home', 'browse']) {
     const old = localStorage.getItem(`vocab_${k}_v1`);
@@ -51,25 +61,80 @@ function setWords(list) {
 }
 function bookPages(g) { return g.from === g.to ? `p.${g.from}` : `p.${g.from}–${g.to}`; }
 
-// ---------- 紀錄(存在瀏覽器 localStorage) ----------
+// ---------- 紀錄 ----------
+// 先存在瀏覽器 localStorage,登入過的本人再同步到伺服器 → GitHub 的 data/users/<id>.stats.json(換手機也在,別人也看得到)
+// 每個字 {wrong, right, streak, star, t};t = 最後修改時間,兩邊合併時取比較新的
+// 看別人的題庫(VIEW):紀錄從 GitHub 讀進來,這次做題的變化只留在記憶體,不保存
 const STORE_KEY = 'vocab_stats_' + UID;
+const DIRTY_KEY = 'vocab_dirty_' + UID;   // 還沒傳到伺服器
 const GRADUATE_STREAK = 3; // 連續答對幾次自動移出不熟清單
-let stats = load();
+let stats = VIEW ? {} : load();
 
 function load() {
   try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
   catch { return {}; }
 }
-function save() { localStorage.setItem(STORE_KEY, JSON.stringify(stats)); }
+function save() {
+  if (VIEW) return;
+  localStorage.setItem(STORE_KEY, JSON.stringify(stats));
+  localStorage.setItem(DIRTY_KEY, '1');
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncStats, 3000);
+}
 function rec(word) {
-  return stats[word] || (stats[word] = { wrong: 0, right: 0, streak: 0, star: false });
+  return stats[word] || (stats[word] = { wrong: 0, right: 0, streak: 0, star: false, t: 0 });
+}
+function touch(r) { r.t = Date.now(); return r; }
+function mergeStats(a, b) {
+  const out = { ...a };
+  for (const [w, r] of Object.entries(b || {})) if (!out[w] || (r.t || 0) > (out[w].t || 0)) out[w] = r;
+  return out;
+}
+// 本人(有登入憑證)才同步;伺服器沒開就留著,下次再傳
+let syncTimer = null, syncSrv = null, syncTried = 0;
+async function syncStats() {
+  if (VIEW || !authOf().token || !localStorage.getItem(DIRTY_KEY)) return;
+  if (!syncSrv) {
+    if (Date.now() - syncTried < 60000) return;
+    syncTried = Date.now();
+    syncSrv = await findServer();
+    if (!syncSrv) return;
+  }
+  try {
+    const sent = JSON.stringify(stats);
+    const r = await fetch(syncSrv.url + '/api/stats', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-User': UID, 'X-Token': authOf().token },
+      body: JSON.stringify({ stats }),
+    });
+    if (!r.ok) { if (r.status === 401) setAuth(UID, { name: authOf().name }); return; }
+    const merged = await r.json();
+    if (JSON.stringify(stats) === sent) localStorage.removeItem(DIRTY_KEY);   // 傳的時候沒有新變化
+    stats = mergeStats(stats, merged);
+    localStorage.setItem(STORE_KEY, JSON.stringify(stats));
+  } catch { syncSrv = null; }
+}
+// 打開網頁時:讀 GitHub 上的紀錄,和這支手機的合併
+async function loadCloudStats() {
+  try {
+    const r = await fetch(`data/users/${BANK_UID}.stats.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (r.status === 404 && !VIEW && Object.keys(stats).length) localStorage.setItem(DIRTY_KEY, '1');   // 雲端還沒有:把這支手機的傳上去
+    if (!r.ok) return;
+    const cloud = await r.json();
+    const before = JSON.stringify(stats);
+    stats = mergeStats(stats, cloud);
+    if (!VIEW) {
+      localStorage.setItem(STORE_KEY, JSON.stringify(stats));
+      if (Object.entries(stats).some(([w, x]) => !cloud[w] || (x.t || 0) > (cloud[w].t || 0))) localStorage.setItem(DIRTY_KEY, '1');
+    }
+    if (JSON.stringify(stats) !== before) refreshHome();
+  } catch {}
 }
 function isWeak(word) {
   const r = stats[word];
   return !!r && (r.star || (r.wrong > 0 && r.streak < GRADUATE_STREAK));
 }
 function record(word, correct) {
-  const r = rec(word);
+  const r = touch(rec(word));
   if (correct) {
     r.right++; r.streak++;
     if (r.streak >= GRADUATE_STREAK) r.star = false;
@@ -172,7 +237,7 @@ function esc(s) {
 
 // ---------- 首頁 ----------
 // scope:'all' 全部、'weak' 不熟,或是選了哪幾頁(陣列,1 開始)。設定記在 localStorage,下次打開一樣
-const HOME_KEY = 'vocab_home_' + UID;
+const HOME_KEY = 'vocab_home_' + (UID || 'guest');
 const settings = Object.assign({ mode: 'meaning', scope: 'all', count: 'all', sound: 'on' },
   (() => { try { return JSON.parse(localStorage.getItem(HOME_KEY)) || {}; } catch { return {}; } })());
 function saveSettings() { localStorage.setItem(HOME_KEY, JSON.stringify(settings)); }
@@ -452,7 +517,7 @@ function updateStar() {
   $('btn-star').textContent = r && r.star ? '★' : '☆';
 }
 $('btn-star').onclick = () => {
-  const r = rec(quiz.list[quiz.i].word);
+  const r = touch(rec(quiz.list[quiz.i].word));
   r.star = !r.star;
   save();
   updateStar();
@@ -493,7 +558,7 @@ $('btn-retry-wrong').onclick = () => startQuiz(quiz.wrongs, quiz.mode);
 $('btn-home').onclick = () => { refreshHome(); show('home'); };
 
 // ---------- 複習單字(每 40 個一頁 + 不熟) ----------
-const BROWSE_KEY = 'vocab_browse_' + UID;
+const BROWSE_KEY = 'vocab_browse_' + (UID || 'guest');
 let browseSel = localStorage.getItem(BROWSE_KEY) || '1';   // '1'、'2'… 或 'weak'
 
 function openBrowse(sel) {
@@ -538,7 +603,7 @@ function renderBrowse() {
         ? w.senses.map(s => `<div class="sense"><span class="pos">${POS_LABEL[s.pos]}</span> ${esc(s.zh)}</div>` + s.ex.map(exRow).join('')).join('')
         : w.senses[0].ex.map(exRow).join(''));
     li.querySelector('.x').onclick = () => {
-      const rr = rec(w.word);
+      const rr = touch(rec(w.word));
       if (weak || isWeak(w.word)) { rr.star = false; rr.streak = GRADUATE_STREAK; }   // 移出不熟
       else rr.star = true;
       save();
@@ -554,7 +619,8 @@ $('browse-quiz').onclick = () => {
 document.querySelectorAll('.btn-to-home').forEach(b => b.onclick = () => { refreshHome(); show('home'); });
 $('btn-reset').onclick = () => {
   if (!confirm('確定要清除所有練習紀錄嗎?')) return;
-  stats = {}; save();
+  for (const w of Object.keys(stats)) stats[w] = { wrong: 0, right: 0, streak: 0, star: false, t: Date.now() };   // 清成 0(不刪,別的手機才會跟著清)
+  save();
   renderBrowse();
 };
 
@@ -610,6 +676,28 @@ $('btn-switch').onclick = () => {
   localStorage.removeItem(USER_KEY);
   location.replace(location.pathname);
 };
+// ---------- 看別人的題庫 ----------
+async function openPeople() {
+  show('people');
+  const ul = $('people-list');
+  ul.innerHTML = '<li class="empty">載入中…</li>';
+  try {
+    const list = await (await fetch('data/users/index.json?t=' + Date.now(), { cache: 'no-store' })).json();
+    ul.innerHTML = '';
+    for (const u of list) {
+      const li = document.createElement('li');
+      const me = u.id === UID;
+      li.innerHTML = `<button class="person">${esc(u.name)}${me ? ' <span class="msg small">(我)</span>' : ''}</button>`;
+      li.querySelector('button').onclick = () => location.href = location.pathname + (me ? '' : '?view=' + u.id);
+      ul.appendChild(li);
+    }
+  } catch { ul.innerHTML = '<li class="empty">載入失敗,請檢查網路</li>'; }
+}
+$('btn-people').onclick = openPeople;
+$('wl-people').onclick = openPeople;
+$('people-back').onclick = () => { if (BANK_UID) { refreshHome(); show('home'); } else show('welcome'); };
+$('btn-view-back').onclick = () => location.replace(location.pathname);
+
 function myUrl() { return location.origin + location.pathname + '?u=' + UID; }
 $('btn-myurl').onclick = async () => {
   try { await navigator.clipboard.writeText(myUrl()); $('btn-myurl').textContent = '已複製 ✓'; }
@@ -618,11 +706,12 @@ $('btn-myurl').onclick = async () => {
 
 async function init() {
   $('btn-say').innerHTML = SPEAKER_SVG;
-  if (!UID) { showWelcome(); return; }
+  if (!BANK_UID) { showWelcome(); return; }
   show('home');
   let bank;
   try {
-    const res = await fetch(`data/users/${UID}.json`, { cache: 'no-cache' });
+    const res = await fetch(`data/users/${BANK_UID}.json`, { cache: 'no-cache' });
+    if (res.status === 404 && VIEW) { location.replace(location.pathname); return; }
     if (res.status === 404) {
       localStorage.removeItem(USER_KEY);
       showWelcome('找不到這個題庫(網址可能打錯了),請重新登入。');
@@ -636,7 +725,18 @@ async function init() {
   }
   $('who').textContent = bank.name;
   $('my-url').textContent = myUrl();
+  document.body.classList.toggle('viewing', !!VIEW);
+  if (VIEW) {
+    $('view-name').textContent = bank.name;
+    $('btn-view-back').textContent = UID ? '回到我的題庫' : '登入 / 建立我的題庫';
+  }
   refreshHome();
+  loadCloudStats().then(syncStats);
+  if (VIEW) return;
+  if (!authOf().token && Object.keys(stats).length) {   // 沒登入過:紀錄只在這支手機
+    $('home-note').textContent = '目前不熟單字只存在這支手機。到「新增課本頁」登入一次,之後就會自動存到雲端,換手機也看得到。';
+    $('home-note').classList.remove('hidden');
+  }
   if (localStorage.getItem('vocab_new_' + UID)) {   // 剛建立:提醒存網址
     localStorage.removeItem('vocab_new_' + UID);
     $('home-note').textContent = '題庫建立好了!請把這個網頁「加入主畫面」,或複製下面的專屬網址,之後打開就是你的題庫。\n接著按「新增課本頁」上傳課本照片。';

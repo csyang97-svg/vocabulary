@@ -17,8 +17,10 @@
   <!-- 首頁 -->
   <section id="home" class="screen">
     <header class="topbar"><div class="title">英文單字練習</div>
-      <div class="top-right who-box"><span id="who"></span><button id="btn-switch" class="link-btn small">切換</button></div></header>
+      <div class="top-right who-box"><span id="who"></span><button id="btn-switch" class="link-btn small no-view">切換</button></div></header>
     <main class="home-body">
+      <div class="view-bar only-view">正在看「<span id="view-name"></span>」的題庫(唯讀):可以做題,但不熟單字和星號只在這次有效,不會改到他的紀錄。
+        <button id="btn-view-back" class="link-btn small">回到我的題庫</button></div>
       <div class="stats">
         <div><span id="stat-total">0</span><small>全部單字</small></div>
         <div id="stat-weak-box"><span id="stat-weak" class="weak-num">0</span><small>不熟單字</small></div>
@@ -53,8 +55,9 @@
       <p id="home-msg" class="msg"></p>
       <button id="btn-start" class="big-btn">開始練習</button>
       <button id="btn-browse" class="big-btn secondary">複習單字</button>
-      <button id="btn-upload" class="link-btn">新增課本頁(上傳照片)›</button>
-      <p class="my-url msg small">我的專屬網址:<span id="my-url"></span> <button id="btn-myurl" class="link-btn small">複製</button></p>
+      <button id="btn-upload" class="link-btn no-view">新增課本頁(上傳照片)›</button>
+      <button id="btn-people" class="link-btn">看別人的題庫›</button>
+      <p class="my-url msg small no-view">我的專屬網址:<span id="my-url"></span> <button id="btn-myurl" class="link-btn small">複製</button></p>
     </main>
   </section>
 
@@ -82,6 +85,7 @@
         <button id="wl-reg" class="big-btn">建立</button>
         <button id="wl-cancel" class="link-btn">取消</button>
       </div>
+      <button id="wl-people" class="link-btn">看別人的題庫›</button>
       <p class="msg small wl-foot">建立和登入時,伺服器要開著;之後練習就不需要了。</p>
     </main>
   </section>
@@ -135,7 +139,7 @@
       <p id="browse-info" class="msg small"></p>
       <ul id="browse-list" class="word-list browse"></ul>
       <button id="browse-quiz" class="big-btn">考這一頁</button>
-      <button id="btn-reset" class="link-btn danger hidden">清除所有練習紀錄</button>
+      <button id="btn-reset" class="link-btn danger hidden no-view">清除所有練習紀錄</button>
     </main>
   </section>
 
@@ -196,6 +200,18 @@
     <footer class="quiz-foot">
       <button id="rv-commit" class="pill-btn wide">加入題庫</button>
     </footer>
+  </section>
+
+  <section id="people" class="screen">
+    <header class="topbar">
+      <button id="people-back" class="icon-btn" aria-label="返回">‹</button>
+      <div class="title">看別人的題庫</div>
+      <div class="top-right"></div>
+    </header>
+    <main class="home-body">
+      <p class="msg small">點名字可以看他的單字和不熟單字,也可以用他的題庫做題(不會改到他的紀錄)。</p>
+      <ul id="people-list" class="people-list"></ul>
+    </main>
   </section>
 
   <script src="app.js"></script>
