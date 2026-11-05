@@ -747,3 +747,22 @@ async function init() {
   }
 }
 init();
+
+// 自動更新:網頁有新版(index.html 的 app-version 變了)就重新載入,不用手動清暫存
+async function checkUpdate() {
+  try {
+    const html = await (await fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' })).text();
+    const m = html.match(/name="app-version" content="([^"]+)"/);
+    const cur = document.querySelector('meta[name=app-version]')?.content;
+    if (!m || m[1] === cur) return;
+    if (['quiz', 'review', 'upload'].some(id => $(id)?.classList.contains('active'))) return;   // 做題或上傳中先不打斷
+    if (sessionStorage.getItem('vocab_reloaded') === m[1]) return;   // 避免一直重新載入
+    sessionStorage.setItem('vocab_reloaded', m[1]);
+    const q = new URLSearchParams(location.search);
+    q.set('_v', m[1]);   // 換網址才不會又拿到暫存的舊網頁
+    location.replace(location.pathname + '?' + q);
+  } catch {}
+}
+if (params.has('_v')) { params.delete('_v'); history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params : '')); }
+setTimeout(checkUpdate, 1500);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
