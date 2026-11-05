@@ -62,7 +62,7 @@ async function openUpload() {
   upMsg('連線中…');
   server = await findServer();
   if (!server) {
-    upMsg('家裡電腦目前沒有開上傳服務。\n(電腦上執行 turn_on_vocab_server.bat 後,約 1 分鐘再試)', true);
+    upMsg('伺服器目前沒有開,請稍後再試。', true);
     return;
   }
   if (!authOf().token) { upMsg(''); showUpLogin(); return; }
@@ -78,7 +78,7 @@ async function openUpload() {
       if (job.status === 'queued' || job.status === 'running') { upMsg(''); watchJob(jid); return; }
     } catch { localStorage.removeItem(JOB_KEY); }
   }
-  upMsg(server.strata ? '' : '⚠ 電腦端的辨識模型(Strata)目前沒開,上傳後會等它開好才處理。', !server.strata);
+  upMsg(server.strata ? '' : '⚠ 伺服器的辨識模型目前沒開,上傳後會等它開好才處理。', !server.strata);
   resetForm();
   upShow('up-form');
 }
@@ -99,7 +99,7 @@ $('up-pw-ok').onclick = async () => {
     setAuth(UID, { name: d.name, token: d.token });
     $('up-pw').value = '';
     openUpload();
-  } catch { upMsg('連不到家裡電腦', true); }
+  } catch { upMsg('連不到伺服器', true); }
 };
 
 function resetForm() {

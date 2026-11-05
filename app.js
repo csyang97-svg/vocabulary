@@ -545,7 +545,7 @@ async function welcomeCall(path, body) {
   const say = t => { msgEl.textContent = t; };
   say('連線中…');
   const srv = await findServer();
-  if (!srv) { say('家裡電腦目前沒有開服務,請稍後再試。'); return; }
+  if (!srv) { say('伺服器目前沒有開,請稍後再試。'); return; }
   try {
     const r = await fetch(srv.url + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const d = await r.json().catch(() => ({}));
@@ -554,7 +554,7 @@ async function welcomeCall(path, body) {
     localStorage.setItem(USER_KEY, d.id);
     if (path === '/api/register') localStorage.setItem('vocab_new_' + d.id, '1');
     location.replace(location.pathname + '?u=' + d.id);
-  } catch { say('連不到家裡電腦,請稍後再試。'); }
+  } catch { say('連不到伺服器,請稍後再試。'); }
 }
 // 登入在上面;按「建立帳號」才展開建立的欄位
 $('wl-new').onclick = () => {
