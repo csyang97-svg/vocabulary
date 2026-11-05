@@ -143,6 +143,29 @@ document.addEventListener('click', e => {
   play(b.dataset.kind, b.dataset.key, b.dataset.text);
 }, true);
 
+// 答對/答錯音效:用 Web Audio 直接產生,不用音檔
+let audioCtx = null;
+function beep(ok) {
+  if (settings.sound === 'off') return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime;
+    const notes = ok ? [[880, 0, 0.12], [1320, 0.1, 0.22]] : [[196, 0, 0.32]];   // 叮咚 / 嗡
+    for (const [freq, start, len] of notes) {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = ok ? 'sine' : 'square';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t + start);
+      g.gain.exponentialRampToValueAtTime(ok ? 0.35 : 0.12, t + start + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + start + len);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t + start);
+      o.stop(t + start + len + 0.02);
+    }
+  } catch {}
+}
+
 function esc(s) {
   return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
@@ -150,7 +173,7 @@ function esc(s) {
 // ---------- 首頁 ----------
 // scope:'all' 全部、'weak' 不熟,或是選了哪幾頁(陣列,1 開始)。設定記在 localStorage,下次打開一樣
 const HOME_KEY = 'vocab_home_' + UID;
-const settings = Object.assign({ mode: 'meaning', scope: 'all', count: 'all' },
+const settings = Object.assign({ mode: 'meaning', scope: 'all', count: 'all', sound: 'on' },
   (() => { try { return JSON.parse(localStorage.getItem(HOME_KEY)) || {}; } catch { return {}; } })());
 function saveSettings() { localStorage.setItem(HOME_KEY, JSON.stringify(settings)); }
 
@@ -375,6 +398,7 @@ function finishAnswer(ok, msg = '', hinted = false) {
   if (ok) quiz.correct++;
   else quiz.wrongs.push(q);
   updateStar();
+  if (!hinted) beep(ok);
   if (ok && !hinted) {   // 答對:短暫顯示 ✔ 就自動下一題,不顯示例句
     $('feedback').innerHTML = '<span class="ok">✔ 答對了</span>';
     $('btn-action').classList.add('hidden');
