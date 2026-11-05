@@ -127,5 +127,17 @@
   {"word":"interruption","page":50,"senses":[{"pos":"n","zh":"中斷"}],"example":{"en":"The rain continued all day without interruption.","zh":"雨整天下個不停。"}},
   {"word":"intimate","page":50,"senses":[{"pos":"adj","zh":"親密的"}],"example":{"en":"I am on intimate terms with coworkers.","zh":"我和同事間的感情很要好。"}},
   {"word":"intuition","page":50,"senses":[{"pos":"n","zh":"直覺"}],"example":{"en":"She sensed what was wrong by intuition.","zh":"她憑直覺意識到什麼地方出毛病了。"}},
-  {"word":"investigation","page":50,"senses":[{"pos":"n","zh":"調查"}],"example":{"en":"The investigation into the accident was carried out by two policemen.","zh":"兩名警察對這一事故展開調查。"}}
+  {"word":"investigation","page":50,"senses":[{"pos":"n","zh":"調查"}],"example":{"en":"The investigation into the accident was carried out by two policemen.","zh":"兩名警察對這一事故展開調查。"}},
+  {"word":"issue","page":51,"senses":[{"pos":"v","zh":"發行,發佈, 流出"},{"pos":"n","zh":"議題"}],"example":{"en":"The post office issued the stamps last week.","zh":"上星期郵局發行了這些邮票。"}},
+  {"word":"keen","page":51,"senses":[{"pos":"adj","zh":"熱愛,敏銳"}],"example":{"en":"She is very keen on art.","zh":"她對藝術很感興趣。"}},
+  {"word":"kettle","page":51,"senses":[{"pos":"n","zh":"水壺"}],"example":{"en":"The water in the kettle is boiling.","zh":"壶裡的水沸騰了。"}},
+  {"word":"kneel","page":51,"senses":[{"pos":"v","zh":"跪下"}],"example":{"en":"She knelt down to pray.","zh":"她跪下來祈禱。"}},
+  {"word":"knob","page":51,"senses":[{"pos":"n","zh":"圓形把手"}],"example":{"en":"He turned the door knob, and the door opened.","zh":"他轉動門把，門就開了。"}},
+  {"word":"lab","page":51,"senses":[{"pos":"n","zh":"語言實驗室"}],"example":{"en":"We have our Oral Communication class in the language laboratory.","zh":"我們語言實習室上口語溝通課。"}},
+  {"word":"laboratory","page":51,"senses":[{"pos":"n","zh":"實驗室"}],"example":{"en":"The professor stayed in the research laboratory doing experiments all day.","zh":"教授整天待在實驗室作實驗。"}},
+  {"word":"lag","page":52,"senses":[{"pos":"n","zh":"時間的延遲"}],"example":{"en":"There's a time lag of about a week between having the blood test and getting the results.","zh":"驗血和拿到結果之間，約有一週的時間差。"}},
+  {"word":"largely","page":52,"senses":[{"pos":"adv","zh":"大部分, 主要地"}],"example":{"en":"Mr. White's farm is largely corn land.","zh":"懷特先生的農場大多是玉米地。"}},
+  {"word":"launch","page":52,"senses":[{"pos":"v","zh":"開始, 發動"},{"pos":"n","zh":"開始"}],"example":{"en":"The organization is to launch a campaign to raise money.","zh":"該機構將展開活動籌款。"}},
+  {"word":"lawful","page":52,"senses":[{"pos":"adj","zh":"合法的"}],"example":{"en":"It is not lawful to kill or injure a pet animal.","zh":"殺害或傷害寵物是不合法的。"}},
+  {"word":"lean","page":52,"senses":[{"pos":"adj","zh":"瘦的"},{"pos":"v","zh":"斜倚, 依靠, 依賴"}],"example":{"en":"That athlete is lean, tall and muscular.","zh":"那個運動員瘦又高，肌肉很多。"}}
 ]
