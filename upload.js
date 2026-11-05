@@ -71,6 +71,10 @@ async function openUpload() {
     if (e.status === 401) { setAuth(UID, { name: authOf().name }); upMsg('請重新登入', true); showUpLogin(); return; }
     upMsg(e.message, true); return;
   }
+  // 這支手機沒記錄的上傳(別支手機傳的、或家裡重新辨識的)也找得到
+  if (!localStorage.getItem(JOB_KEY)) {
+    try { const js = await api('/api/jobs'); if (js.length) localStorage.setItem(JOB_KEY, js[0].id); } catch {}
+  }
   const jid = localStorage.getItem(JOB_KEY);
   if (jid) {
     try {
