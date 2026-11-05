@@ -139,5 +139,10 @@
   {"word":"largely","page":52,"senses":[{"pos":"adv","zh":"大部分, 主要地"}],"example":{"en":"Mr. White's farm is largely corn land.","zh":"懷特先生的農場大多是玉米地。"}},
   {"word":"launch","page":52,"senses":[{"pos":"v","zh":"開始, 發動"},{"pos":"n","zh":"開始"}],"example":{"en":"The organization is to launch a campaign to raise money.","zh":"該機構將展開活動籌款。"}},
   {"word":"lawful","page":52,"senses":[{"pos":"adj","zh":"合法的"}],"example":{"en":"It is not lawful to kill or injure a pet animal.","zh":"殺害或傷害寵物是不合法的。"}},
-  {"word":"lean","page":52,"senses":[{"pos":"adj","zh":"瘦的"},{"pos":"v","zh":"斜倚, 依靠, 依賴"}],"example":{"en":"That athlete is lean, tall and muscular.","zh":"那個運動員瘦又高，肌肉很多。"}}
+  {"word":"lean","page":52,"senses":[{"pos":"adj","zh":"瘦的"},{"pos":"v","zh":"斜倚, 依靠, 依賴"}],"example":{"en":"That athlete is lean, tall and muscular.","zh":"那個運動員瘦又高，肌肉很多。"}},
+  {"word":"magnetic","page":55,"senses":[{"pos":"adj","zh":"有磁性的"}],"example":{"en":"The magnetic field of our planet is made by swirling motions of molten iron in Earth's outer core.","zh":"地球磁場是由地球外核熔融的流動週期造成。"}},
+  {"word":"manual","page":55,"senses":[{"pos":"adj","zh":"體力的,勞動的"},{"pos":"n","zh":"手冊,說明書,使用手冊"}],"example":{"en":"He's willing to do low-paid manual jobs.","zh":"他願做低薪資體力勞動的工作。"}},
+  {"word":"manufacture","page":55,"senses":[{"pos":"v","zh":"製造,大量製造"}],"example":{"en":"This car was designed and manufactured in Italy.","zh":"這輛車在義大利設計製造。"}},
+  {"word":"marathon","page":55,"senses":[{"pos":"n","zh":"馬拉松比賽,耐力比賽"}],"example":{"en":"A marathon runner has to be able to keep running for 42.195 kilometers, without any intermediate supply of water and food.","zh":"一位馬拉松跑者要能連續跑 42.195 公里，期間接受最少量的食物和水供應。"}},
+  {"word":"margin","page":55,"senses":[{"pos":"n","zh":"邊界,邊緣,留好空白以容納註記"}],"example":{"en":"Use double spacing and wide margins to leave room for comments.","zh":"隔行，留寬邊，才好留空白寫註記。"}}
 ]
