@@ -26,7 +26,7 @@ if (UID && UID === LEGACY_UID) {   // 舊的練習紀錄搬過來(只做一次)
 
 // ---------- 題庫 ----------
 const POS_LABEL = { n: 'n.', v: 'v.', adj: 'adj.', adv: 'adv.', prep: 'prep.', conj: 'conj.', pron: 'pron.' };
-const POS_CHOICES = ['n', 'v', 'adj', 'adv'];
+const POS_CHOICES = ['n', 'v', 'adj', 'adv', 'prep', 'conj'];   // 詞性題 6 個選項
 
 // 題庫在 data/users/<id>.json,啟動時載入(見最下方 init)
 // 每個字:{word, page, senses:[{pos, zh, ex:[{en, zh, audio}]}]},課本上每個意思和它的例句(audio 是例句音檔 audio/e/<audio>.mp3)
@@ -273,12 +273,12 @@ function sectionLabel(text) {
 function senseLabel(s) { return quiz.mode === 'both' ? s.zh : `${POS_LABEL[s.pos]} ${s.zh}`; }
 function meaningAnswers(q) { return [...new Set(q.senses.map(senseLabel))]; }
 
-// 正確的意思 + 其他單字的意思當干擾選項(至少 4 個選項,複選題多 3 個干擾)
+// 正確的意思 + 其他單字的意思當干擾選項:固定 6 個選項(正確答案很多時至少留 2 個干擾)
 function buildMeaningOptions(q) {
   const answers = quiz.answers, multi = answers.length > 1;
   const zhs = new Set(q.senses.map(s => s.zh));
   const opts = answers.map(label => ({ label, ok: true }));
-  const total = Math.min(Math.max(4, answers.length + 3), 8);
+  const total = Math.max(6, answers.length + 2);
   for (const d of shuffle(WORDS)) {
     if (opts.length >= total) break;
     if (d.word === q.word) continue;
@@ -287,7 +287,7 @@ function buildMeaningOptions(q) {
     if (!zhs.has(s.zh) && !opts.some(o => o.label === label)) opts.push({ label, ok: false });
   }
   const wrap = document.createElement('div');
-  wrap.className = 'opt-col meaning-opts';
+  wrap.className = 'opt-col meaning-opts' + (quiz.mode === 'both' ? ' two-col' : '');   // 合併模式選項短,排兩欄才放得下詞性
   shuffle(opts).forEach(o => {
     const b = document.createElement('button');
     b.className = 'opt';

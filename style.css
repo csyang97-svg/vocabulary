@@ -78,7 +78,7 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .opt.missed { border: 2px dashed #4caf50; }
 .opt.faded { opacity: .35; }
 .opt .check { float: right; opacity: .8; }
-.pos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pos-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 .pos-grid .opt { text-align: center; font-size: 22px; }
 
 .feedback { margin-top: 16px; text-align: center; font-size: 17px; min-height: 1.4em; line-height: 1.5; }
@@ -209,3 +209,5 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .up-guide li { margin-bottom: 6px; }
 .up-guide b { color: #f5c518; font-weight: 600; }
 .rv-head .pg.need { border-color: #e57373; box-shadow: 0 0 0 1px #e57373; }
+.meaning-opts.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.meaning-opts.two-col .opt { padding: 14px 12px; font-size: 17px; }
