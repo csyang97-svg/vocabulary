@@ -144,5 +144,11 @@
   {"word":"manual","page":55,"senses":[{"pos":"adj","zh":"體力的,勞動的"},{"pos":"n","zh":"手冊,說明書,使用手冊"}],"example":{"en":"He's willing to do low-paid manual jobs.","zh":"他願做低薪資體力勞動的工作。"}},
   {"word":"manufacture","page":55,"senses":[{"pos":"v","zh":"製造,大量製造"}],"example":{"en":"This car was designed and manufactured in Italy.","zh":"這輛車在義大利設計製造。"}},
   {"word":"marathon","page":55,"senses":[{"pos":"n","zh":"馬拉松比賽,耐力比賽"}],"example":{"en":"A marathon runner has to be able to keep running for 42.195 kilometers, without any intermediate supply of water and food.","zh":"一位馬拉松跑者要能連續跑 42.195 公里，期間接受最少量的食物和水供應。"}},
-  {"word":"margin","page":55,"senses":[{"pos":"n","zh":"邊界,邊緣,留好空白以容納註記"}],"example":{"en":"Use double spacing and wide margins to leave room for comments.","zh":"隔行，留寬邊，才好留空白寫註記。"}}
+  {"word":"margin","page":55,"senses":[{"pos":"n","zh":"邊界,邊緣,留好空白以容納註記"}],"example":{"en":"Use double spacing and wide margins to leave room for comments.","zh":"隔行，留寬邊，才好留空白寫註記。"}},
+  {"word":"measurable","page":56,"senses":[{"pos":"adj","zh":"可測量的"}],"example":{"en":"He has made measurable improvements in his English.","zh":"他的英文有明顯的進步。"}},
+  {"word":"mechanic","page":56,"senses":[{"pos":"n","zh":"技工"}],"example":{"en":"Any mechanic will have this problem.","zh":"任何一個技工都會碰到這種問題。"}},
+  {"word":"mechanical","page":56,"senses":[{"pos":"n","zh":"機械的、不經思考的"}],"example":{"en":"Any machine will have an emergency landing due to mechanical problems.","zh":"由於機械問題，飛機必須安全降落。"}},
+  {"word":"memorial","page":56,"senses":[{"pos":"n","zh":"紀念活動, 紀念碑"},{"pos":"adj","zh":"用以紀念的"}],"example":{"en":"The service is a memorial to those killed in the war.","zh":"此儀式是為了紀念戰事中犧牲的人。"}},
+  {"word":"mercy","page":56,"senses":[{"pos":"n","zh":"憐憫"}],"example":{"en":"The boy was screaming and begging for mercy.","zh":"男孩尖叫乞求憐憫。"}},
+  {"word":"merit","page":56,"senses":[{"pos":"n","zh":"價值, 長處"}],"example":{"en":"They have deep respect for a greater zwaugd.","zh":"這種嚴肅的討論得到更大的讚賞。"}}
 ]
