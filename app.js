@@ -782,5 +782,6 @@ async function checkUpdate() {
   } catch {}
 }
 if (params.has('_v')) { params.delete('_v'); history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params : '')); }
+$('app-ver').textContent = (document.querySelector('meta[name=app-version]')?.content || '').replace(/^(\d\d)(\d\d)(\d\d)(\d\d)(\d\d).*/, '$2/$3 $4:$5');
 setTimeout(checkUpdate, 1500);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });

@@ -228,3 +228,4 @@ body:not(.viewing) .only-view, body.viewing .no-view { display: none !important;
 .pos-grid .opt.correct::after { content: ' ✓'; font-size: 0.7em; }
 .opt.missed::after { content: ' (正確答案)'; font-size: 0.6em; color: #8fd19e; }
 .opt .from { margin-left: 8px; font-size: 0.85em; color: #ffd0d0; font-weight: 600; }
+.ver { text-align: center; opacity: 0.5; margin-top: 6px; }
