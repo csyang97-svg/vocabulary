@@ -241,6 +241,14 @@ const HOME_KEY = 'vocab_home_' + (UID || 'guest');
 const settings = Object.assign({ mode: 'meaning', scope: 'all', count: 'all', sound: 'on' },
   (() => { try { return JSON.parse(localStorage.getItem(HOME_KEY)) || {}; } catch { return {}; } })());
 function saveSettings() { localStorage.setItem(HOME_KEY, JSON.stringify(settings)); }
+settings.mode = settings.mode === 'pos' || settings.mode === 'both' ? 'both' : 'meaning';   // 一定考中文意思,只選要不要加考詞性(以前的「只考詞性」改成意思+詞性)
+function renderAddPos() { $('btn-addpos').classList.toggle('on', settings.mode === 'both'); }
+$('btn-addpos').onclick = () => {
+  settings.mode = settings.mode === 'both' ? 'meaning' : 'both';
+  saveSettings();
+  renderAddPos();
+};
+renderAddPos();
 
 document.querySelectorAll('.seg').forEach(seg => {
   seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.value === settings[seg.dataset.name]));

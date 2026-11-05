@@ -218,3 +218,8 @@ body:not(.viewing) .only-view, body.viewing .no-view { display: none !important;
 .view-bar { background: #2f3a4f; border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: #dfe6f3; }
 .people-list { list-style: none; padding: 0; margin: 12px 0; }
 .people-list .person { width: 100%; text-align: left; padding: 14px 16px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #444; background: #2b2b2b; color: inherit; font-size: 18px; }
+.toggle-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid #444; background: #2b2b2b; color: inherit; font-size: 17px; }
+.toggle-btn .box { width: 22px; height: 22px; border-radius: 6px; border: 2px solid #777; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; }
+.toggle-btn.on { border-color: #5b7fb5; background: #34486a; }
+.toggle-btn.on .box { border-color: #8fb0e0; background: #5b7fb5; }
+.toggle-btn.on .box::after { content: '✓'; color: #fff; }
