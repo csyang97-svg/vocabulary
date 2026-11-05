@@ -208,3 +208,4 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .up-guide ol { padding-left: 22px; margin: 0; color: #ccc; font-size: 15px; line-height: 1.6; }
 .up-guide li { margin-bottom: 6px; }
 .up-guide b { color: #f5c518; font-weight: 600; }
+.rv-head .pg.need { border-color: #e57373; box-shadow: 0 0 0 1px #e57373; }

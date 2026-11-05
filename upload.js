@@ -252,12 +252,16 @@ function reviewCard(w) {
     `<input class="txt pg" type="number" inputmode="numeric" value="${w.page ?? ''}" placeholder="頁"></div>` +
     (have ? '<span class="rv-tag have">已在題庫</span>' : '') +
     (!w.sure && !have ? '<span class="rv-tag warn">⚠ 不確定有沒有畫螢光筆</span>' : '') +
+    (!w.page ? '<span class="rv-tag warn">⚠ 照片上讀不到頁碼,請在右上角填課本頁碼</span>' : '') +
     `<div class="senses"></div><button class="rv-add sense-add">+ 意思</button>`;
   const box = card.querySelector('.senses');
   if (w.example?.en && w.senses?.length && !w.senses.some(s => s.ex?.length))   // 舊格式:例句放在第一個意思底下
     w.senses[0].ex = [w.example];
   (w.senses?.length ? w.senses : [{ pos: 'n', zh: '', ex: [] }]).forEach(s => box.appendChild(senseRow(s)));
   card.querySelector('.sense-add').onclick = () => box.appendChild(senseRow());
+  const pg = card.querySelector('.pg');
+  pg.classList.toggle('need', !pg.value);
+  pg.oninput = () => pg.classList.toggle('need', !pg.value);
   const cb = card.querySelector('.on');
   const sync = () => { card.classList.toggle('off', !cb.checked); updateCommitBtn(); };
   cb.onchange = sync;
