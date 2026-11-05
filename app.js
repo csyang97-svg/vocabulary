@@ -242,7 +242,15 @@ const settings = Object.assign({ mode: 'meaning', scope: 'all', count: 'all', so
   (() => { try { return JSON.parse(localStorage.getItem(HOME_KEY)) || {}; } catch { return {}; } })());
 function saveSettings() { localStorage.setItem(HOME_KEY, JSON.stringify(settings)); }
 settings.mode = settings.mode === 'pos' || settings.mode === 'both' ? 'both' : 'meaning';   // 一定考中文意思,只選要不要加考詞性(以前的「只考詞性」改成意思+詞性)
-function renderAddPos() { $('btn-addpos').classList.toggle('on', settings.mode === 'both'); }
+function renderAddPos() {
+  $('btn-addpos').classList.toggle('on', settings.mode === 'both');
+  $('btn-multi').classList.toggle('on', settings.multi !== 'off');
+}
+$('btn-multi').onclick = () => {   // 多義複選:一個字有好幾個意思時一次全選;不勾 → 隨機考其中一個(單選)
+  settings.multi = settings.multi === 'off' ? 'on' : 'off';
+  saveSettings();
+  renderAddPos();
+};
 $('btn-addpos').onclick = () => {
   settings.mode = settings.mode === 'both' ? 'meaning' : 'both';
   saveSettings();
@@ -340,11 +348,18 @@ function renderQuestion() {
   $('word').textContent = q.word;
   $('btn-say').dataset.key = $('btn-say').dataset.text = q.word;
   quiz.answers = meaningAnswers(q);
+  quiz.posAnswer = q.pos;
+  const many = quiz.answers.length > 1;
+  if (many && settings.multi === 'off') {   // 多義不複選:隨機考其中一個意思(單選),詞性也只考這個意思的
+    const s = q.senses[Math.floor(Math.random() * q.senses.length)];
+    quiz.answers = [senseLabel(s)];
+    quiz.posAnswer = [s.pos];
+  }
   const multi = quiz.answers.length > 1;
   $('word-sub').textContent = {
     meaning: multi ? '複選題:選出所有正確的意思' : '',
     pos: '選出所有正確的詞性(可複選)',
-    both: multi ? '選出所有中文意思(複選),並選出所有詞性' : '選中文意思,並選出所有詞性',
+    both: multi ? '選出所有中文意思(複選),並選出所有詞性' : many ? '選中文意思,並選出這個意思的詞性' : '選中文意思,並選出所有詞性',
   }[quiz.mode];
   $('feedback').innerHTML = '';
   updateStar();
@@ -440,7 +455,7 @@ function markMeaning(q, reveal) {
   });
 }
 function markPos(q, reveal) {
-  const answer = new Set(q.pos);
+  const answer = new Set(quiz.posAnswer);
   document.querySelectorAll('#options .pos-grid .opt').forEach(b => {
     const p = b.dataset.pos, sel = !reveal && quiz.selected.has(p), right = answer.has(p);
     b.classList.remove('selected');
@@ -457,7 +472,7 @@ function submit() {
   if (needPos && !quiz.selected.size) return warn('請至少選一個詞性');
   quiz.answered = true;
 
-  const answer = new Set(q.pos);
+  const answer = new Set(quiz.posAnswer);
   const meaningOk = !needMeaning || (quiz.picked.size === quiz.answers.length && quiz.answers.every(a => quiz.picked.has(a)));
   const posOk = !needPos || (answer.size === quiz.selected.size && [...answer].every(p => quiz.selected.has(p)));
   if (needMeaning) markMeaning(q, false);
