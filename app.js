@@ -382,7 +382,7 @@ function buildMeaningOptions(q) {
     if (d.word === q.word) continue;
     const s = d.senses[Math.floor(Math.random() * d.senses.length)];
     const label = senseLabel(s);
-    if (!zhs.has(s.zh) && !opts.some(o => o.label === label)) opts.push({ label, ok: false });
+    if (!zhs.has(s.zh) && !opts.some(o => o.label === label)) opts.push({ label, ok: false, word: d.word });
   }
   const wrap = document.createElement('div');
   wrap.className = 'opt-col meaning-opts' + (quiz.mode === 'both' ? ' two-col' : '');   // 合併模式選項短,排兩欄才放得下詞性
@@ -391,6 +391,7 @@ function buildMeaningOptions(q) {
     b.className = 'opt';
     b.textContent = o.label;
     b.dataset.ok = o.ok ? '1' : '';
+    b.dataset.word = o.word || '';
     b.onclick = () => {
       if (quiz.answered) return;
       if (multi) {   // 複選:點一下選、再點一下取消
@@ -431,7 +432,10 @@ function markMeaning(q, reveal) {
     const right = !!b.dataset.ok, sel = !reveal && quiz.picked.has(b.textContent);
     b.classList.remove('selected');
     if (right && (sel || reveal)) b.classList.add('correct');
-    else if (sel && !right) b.classList.add('wrong');
+    else if (sel && !right) {   // 選錯的是別的單字的意思:旁邊標出是哪個字
+      b.classList.add('wrong');
+      if (b.dataset.word) b.insertAdjacentHTML('beforeend', `<span class="from">→ ${esc(b.dataset.word)}</span>`);
+    }
     else if (right) b.classList.add('missed');
   });
 }
