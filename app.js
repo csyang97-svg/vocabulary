@@ -461,6 +461,12 @@ function submit() {
 
   let msg = '';
   if (quiz.mode === 'both' && meaningOk !== posOk) msg = meaningOk ? '(意思對,詞性錯)' : '(詞性對,意思錯)';
+  if (needPos && !posOk) {   // 說清楚詞性錯在哪:紅色是「你選了但不對」,不是答案
+    const extra = [...quiz.selected].filter(p => !answer.has(p)).map(p => POS_LABEL[p]);
+    const miss = [...answer].filter(p => !quiz.selected.has(p)).map(p => POS_LABEL[p]);
+    msg += `<div class="pos-why">正確詞性:${[...answer].map(p => POS_LABEL[p]).join(' ')}` +
+      (extra.length ? `;多選了 ${extra.join(' ')}` : '') + (miss.length ? `;少選了 ${miss.join(' ')}` : '') + '</div>';
+  }
   finishAnswer(meaningOk && posOk, msg);
 }
 function warn(text) { $('feedback').innerHTML = `<span class="ng">${text}</span>`; }
