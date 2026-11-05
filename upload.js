@@ -193,7 +193,7 @@ function openReview(job) {
   const words = [...fresh, ...(job.words || []).filter(have)];   // 已在題庫的放最後
   let msg = `${job.total} 張照片找到 ${words.length} 個有畫螢光筆的單字`;
   if (words.length > fresh.length) msg += `(${words.length - fresh.length} 個已經在題庫)`;
-  msg += '。請檢查拼字、詞性、意思,⚠ 是不太確定有沒有畫螢光筆的,預設不勾。';
+  msg += '。請檢查拼字、每個意思和例句,⚠ 是不太確定有沒有畫螢光筆的,預設不勾。';
   if (job.photo_errors?.length) msg += ` 第 ${job.photo_errors.join('、')} 張無法辨識。`;
   if (job.committed) msg = `這批已經在 ${new Date(job.committed.time * 1000).toLocaleString()} 加入題庫:${job.committed.words.join(', ')}`;
   $('rv-msg').textContent = msg;
@@ -202,14 +202,28 @@ function openReview(job) {
   updateCommitBtn();
 }
 
-function senseRow(s = { pos: 'n', zh: '' }) {
+// 一個意思(課本上的一列):詞性、中文意思,底下是它的例句
+function senseRow(s = { pos: 'n', zh: '', ex: [] }) {
   const row = document.createElement('div');
-  row.className = 'rv-sense';
-  row.innerHTML = `<select>${REVIEW_POS.map(p => `<option value="${p}"${p === s.pos ? ' selected' : ''}>${POS_LABEL[p]}</option>`).join('')}</select>` +
+  row.className = 'rv-sense-box';
+  row.innerHTML = `<div class="rv-sense"><select>${REVIEW_POS.map(p => `<option value="${p}"${p === s.pos ? ' selected' : ''}>${POS_LABEL[p]}</option>`).join('')}</select>` +
     `<input class="txt zh" value="${esc(s.zh || '')}" placeholder="中文意思">` +
-    `<button class="x" aria-label="刪除">✕</button>`;
-  row.querySelector('.x').onclick = () => row.remove();
+    `<button class="x" aria-label="刪除這個意思">✕</button></div>` +
+    `<div class="rv-exs"></div><button class="rv-add ex-add">+ 例句</button>`;
+  const exs = row.querySelector('.rv-exs');
+  (s.ex?.length ? s.ex : [{ en: '', zh: '' }]).forEach(ex => exs.appendChild(exRowEdit(ex)));
+  row.querySelector('.rv-sense .x').onclick = () => row.remove();
+  row.querySelector('.ex-add').onclick = () => exs.appendChild(exRowEdit());
   return row;
+}
+function exRowEdit(ex = { en: '', zh: '' }) {
+  const d = document.createElement('div');
+  d.className = 'rv-exrow';
+  d.innerHTML = `<textarea class="txt rv-ex en" rows="2" placeholder="英文例句">${esc(ex.en || '')}</textarea>` +
+    `<textarea class="txt rv-ex zh" rows="1" placeholder="例句中文">${esc(ex.zh || '')}</textarea>` +
+    `<button class="x" aria-label="刪除這個例句">✕</button>`;
+  d.querySelector('.x').onclick = () => d.remove();
+  return d;
 }
 
 function reviewCard(w) {
@@ -227,12 +241,12 @@ function reviewCard(w) {
     `<input class="txt pg" type="number" inputmode="numeric" value="${w.page ?? ''}" placeholder="頁"></div>` +
     (have ? '<span class="rv-tag have">已在題庫</span>' : '') +
     (!w.sure && !have ? '<span class="rv-tag warn">⚠ 不確定有沒有畫螢光筆</span>' : '') +
-    `<div class="senses"></div><button class="rv-add">+ 詞性</button>` +
-    `<textarea class="txt rv-ex en" rows="2" placeholder="英文例句">${esc(w.example?.en || '')}</textarea>` +
-    `<textarea class="txt rv-ex zh" rows="1" placeholder="例句中文">${esc(w.example?.zh || '')}</textarea>`;
+    `<div class="senses"></div><button class="rv-add sense-add">+ 意思</button>`;
   const box = card.querySelector('.senses');
-  (w.senses?.length ? w.senses : [{ pos: 'n', zh: '' }]).forEach(s => box.appendChild(senseRow(s)));
-  card.querySelector('.rv-add').onclick = () => box.appendChild(senseRow());
+  if (w.example?.en && w.senses?.length && !w.senses.some(s => s.ex?.length))   // 舊格式:例句放在第一個意思底下
+    w.senses[0].ex = [w.example];
+  (w.senses?.length ? w.senses : [{ pos: 'n', zh: '', ex: [] }]).forEach(s => box.appendChild(senseRow(s)));
+  card.querySelector('.sense-add').onclick = () => box.appendChild(senseRow());
   const cb = card.querySelector('.on');
   const sync = () => { card.classList.toggle('off', !cb.checked); updateCommitBtn(); };
   cb.onchange = sync;
@@ -252,13 +266,19 @@ $('rv-commit').onclick = async () => {
   for (const c of cards) {
     const word = c.querySelector('.word').value.trim().toLowerCase();
     const page = parseInt(c.querySelector('.pg').value, 10);
-    const senses = [...c.querySelectorAll('.rv-sense')]
-      .map(r => ({ pos: r.querySelector('select').value, zh: r.querySelector('.zh').value.trim() }))
+    const senses = [...c.querySelectorAll('.rv-sense-box')]
+      .map(r => ({
+        pos: r.querySelector('select').value,
+        zh: r.querySelector('.rv-sense .zh').value.trim(),
+        ex: [...r.querySelectorAll('.rv-exrow')]
+          .map(e => ({ en: e.querySelector('.en').value.trim(), zh: e.querySelector('textarea.zh').value.trim() }))
+          .filter(e => e.en),
+      }))
       .filter(s => s.zh);
     if (!/^[a-z][a-z\- ]*$/.test(word)) { alert(`單字「${word}」格式不對`); return; }
     if (!(page >= 1 && page <= 999)) { alert(`「${word}」要填頁碼`); return; }
     if (!senses.length) { alert(`「${word}」至少要有一個中文意思`); return; }
-    words.push({ word, page, senses, example: { en: c.querySelector('.en').value.trim(), zh: c.querySelector('textarea.zh').value.trim() } });
+    words.push({ word, page, senses });
   }
   const btn = $('rv-commit');
   btn.disabled = true; btn.textContent = '加入中(產生語音)…';

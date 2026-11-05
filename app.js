@@ -5,6 +5,7 @@ const POS_LABEL = { n: 'n.', v: 'v.', adj: 'adj.', adv: 'adv.', prep: 'prep.', c
 const POS_CHOICES = ['n', 'v', 'adj', 'adv'];
 
 // 題庫在 data/words.json,啟動時載入(見最下方 init)
+// 每個字:{word, page, senses:[{pos, zh, ex:[{en, zh, audio}]}]},課本上每個意思和它的例句(audio 是例句音檔 audio/e/<audio>.mp3)
 // 照課本頁碼(同頁照字母)排好,每 GROUP_SIZE 個字分成一「頁」(GROUPS),複習和考試都用這個分頁
 const GROUP_SIZE = 40;
 let WORDS = [], BY_WORD = {}, GROUPS = [];
@@ -13,6 +14,7 @@ function setWords(list) {
   list = list.slice().sort((a, b) => a.page - b.page || a.word.localeCompare(b.word));
   WORDS = list.map(w => ({
     ...w,
+    senses: w.senses.map(s => ({ ...s, ex: s.ex || [] })),
     pos: [...new Set(w.senses.map(s => s.pos))],
     meaning: w.senses.map(s => `${POS_LABEL[s.pos]} ${s.zh}`).join('  '),
   }));
@@ -89,30 +91,32 @@ function speak(text) {
   u.lang = 'en-US'; u.rate = 0.9;
   speechSynthesis.speak(u);
 }
-// 播放預先產生的音檔(audio/w 單字、audio/e 例句),沒有音檔時改用瀏覽器語音
+// 播放預先產生的音檔(audio/w/<單字>.mp3、audio/e/<例句的 audio>.mp3),沒有音檔時改用瀏覽器語音
 let currentAudio = null;
-function play(kind, word) {
-  const w = BY_WORD[word];
-  const text = kind === 'e' ? w?.example?.en : word;
+function play(kind, key, text) {
   if (!text) return;
   if (currentAudio) currentAudio.pause();
   if ('speechSynthesis' in window) speechSynthesis.cancel();
-  const audio = currentAudio = new Audio(`audio/${kind}/${encodeURIComponent(word)}.mp3`);
+  if (!key) { speak(text); return; }
+  const audio = currentAudio = new Audio(`audio/${kind}/${encodeURIComponent(key)}.mp3`);
   let fellBack = false;
   const fallback = () => { if (!fellBack) { fellBack = true; speak(text); } };
   audio.onerror = fallback;
   audio.play().catch(fallback);
 }
 const SPEAKER_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
-function sayBtn(kind, word, label) {
-  return `<button class="say" data-kind="${kind}" data-word="${esc(word)}" aria-label="${label}">${SPEAKER_SVG}</button>`;
+function sayWord(word) {
+  return `<button class="say" data-kind="w" data-key="${esc(word)}" data-text="${esc(word)}" aria-label="唸單字">${SPEAKER_SVG}</button>`;
+}
+function sayEx(ex) {
+  return `<button class="say" data-kind="e" data-key="${esc(ex.audio || '')}" data-text="${esc(ex.en)}" aria-label="唸例句">${SPEAKER_SVG}</button>`;
 }
 // 所有喇叭按鈕共用一個點擊處理
 document.addEventListener('click', e => {
   const b = e.target.closest('.say');
   if (!b) return;
   e.stopPropagation();
-  play(b.dataset.kind, b.dataset.word);
+  play(b.dataset.kind, b.dataset.key, b.dataset.text);
 }, true);
 
 function esc(s) {
@@ -199,7 +203,7 @@ $('stat-weak-box').onclick = () => openBrowse('weak');
 let quiz = null;
 
 function startQuiz(list, mode) {
-  quiz = { list: shuffle(list), mode, i: 0, correct: 0, wrongs: [], answered: false, selected: new Set(), picked: null };
+  quiz = { list: shuffle(list), mode, i: 0, correct: 0, wrongs: [], answered: false, selected: new Set(), picked: new Set() };
   show('quiz');
   renderQuestion();
 }
@@ -208,23 +212,29 @@ function renderQuestion() {
   const q = quiz.list[quiz.i];
   quiz.answered = false;
   quiz.selected = new Set();
-  quiz.picked = null;
+  quiz.picked = new Set();
   $('progress').textContent = `${quiz.i + 1}/${quiz.list.length}`;
   $('word').textContent = q.word;
-  $('btn-say').dataset.word = q.word;
-  $('word-sub').textContent = { meaning: '', pos: '選出所有正確的詞性(可複選)', both: '選中文意思,並選出所有詞性' }[quiz.mode];
+  $('btn-say').dataset.key = $('btn-say').dataset.text = q.word;
+  quiz.answers = meaningAnswers(q);
+  const multi = quiz.answers.length > 1;
+  $('word-sub').textContent = {
+    meaning: multi ? '複選題:選出所有正確的意思' : '',
+    pos: '選出所有正確的詞性(可複選)',
+    both: multi ? '選出所有中文意思(複選),並選出所有詞性' : '選中文意思,並選出所有詞性',
+  }[quiz.mode];
   $('feedback').innerHTML = '';
   updateStar();
 
   const box = $('options');
   box.innerHTML = '';
-  if (quiz.mode === 'both') box.appendChild(sectionLabel('中文意思'));
+  if (quiz.mode === 'both') box.appendChild(sectionLabel(multi ? '中文意思(複選)' : '中文意思'));
   if (quiz.mode !== 'pos') box.appendChild(buildMeaningOptions(q));
   if (quiz.mode === 'both') box.appendChild(sectionLabel('詞性(可複選)'));
   if (quiz.mode !== 'meaning') box.appendChild(buildPosGrid());
 
   $('btn-action').textContent = '確認';
-  $('btn-action').classList.toggle('hidden', quiz.mode === 'meaning');
+  $('btn-action').classList.toggle('hidden', quiz.mode === 'meaning' && !multi);
 }
 
 function sectionLabel(text) {
@@ -234,29 +244,39 @@ function sectionLabel(text) {
   return d;
 }
 
-// 意思選項:合併模式只顯示中文(不顯示詞性,以免洩漏答案)
+// 意思選項:每個選項是一個意思(課本上的一列)。合併模式只顯示中文(不顯示詞性,以免洩漏答案)
+function senseLabel(s) { return quiz.mode === 'both' ? s.zh : `${POS_LABEL[s.pos]} ${s.zh}`; }
+function meaningAnswers(q) { return [...new Set(q.senses.map(senseLabel))]; }
+
+// 正確的意思 + 其他單字的意思當干擾選項(至少 4 個選項,複選題多 3 個干擾)
 function buildMeaningOptions(q) {
-  const label = quiz.mode === 'both' ? zhOnly : w => w.meaning;
-  const opts = [q];
+  const answers = quiz.answers, multi = answers.length > 1;
+  const zhs = new Set(q.senses.map(s => s.zh));
+  const opts = answers.map(label => ({ label, ok: true }));
+  const total = Math.min(Math.max(4, answers.length + 3), 8);
   for (const d of shuffle(WORDS)) {
-    if (opts.length >= 4) break;
-    if (!opts.some(o => label(o) === label(d))) opts.push(d);
+    if (opts.length >= total) break;
+    if (d.word === q.word) continue;
+    const s = d.senses[Math.floor(Math.random() * d.senses.length)];
+    const label = senseLabel(s);
+    if (!zhs.has(s.zh) && !opts.some(o => o.label === label)) opts.push({ label, ok: false });
   }
   const wrap = document.createElement('div');
   wrap.className = 'opt-col meaning-opts';
   shuffle(opts).forEach(o => {
     const b = document.createElement('button');
     b.className = 'opt';
-    b.textContent = label(o);
-    b.dataset.word = o.word;
+    b.textContent = o.label;
+    b.dataset.ok = o.ok ? '1' : '';
     b.onclick = () => {
       if (quiz.answered) return;
-      if (quiz.mode === 'meaning') {
-        quiz.picked = o.word;
-        submit();
+      if (multi) {   // 複選:點一下選、再點一下取消
+        quiz.picked.has(o.label) ? quiz.picked.delete(o.label) : quiz.picked.add(o.label);
+        b.classList.toggle('selected');
       } else {
-        quiz.picked = o.word;
-        wrap.querySelectorAll('.opt').forEach(x => x.classList.toggle('selected', x === b));
+        quiz.picked = new Set([o.label]);
+        if (quiz.mode === 'meaning') submit();
+        else wrap.querySelectorAll('.opt').forEach(x => x.classList.toggle('selected', x === b));
       }
     };
     wrap.appendChild(b);
@@ -282,14 +302,14 @@ function buildPosGrid() {
   return grid;
 }
 
-function zhOnly(w) { return w.senses.map(s => s.zh).join('; '); }
-
 // 標出正確/錯誤;reveal = 按提示時直接顯示答案
 function markMeaning(q, reveal) {
   document.querySelectorAll('#options .meaning-opts .opt').forEach(b => {
+    const right = !!b.dataset.ok, sel = !reveal && quiz.picked.has(b.textContent);
     b.classList.remove('selected');
-    if (b.dataset.word === q.word) b.classList.add('correct');
-    else if (!reveal && b.dataset.word === quiz.picked) b.classList.add('wrong');
+    if (right && (sel || reveal)) b.classList.add('correct');
+    else if (sel && !right) b.classList.add('wrong');
+    else if (right) b.classList.add('missed');
   });
 }
 function markPos(q, reveal) {
@@ -306,12 +326,12 @@ function markPos(q, reveal) {
 function submit() {
   const q = quiz.list[quiz.i];
   const needMeaning = quiz.mode !== 'pos', needPos = quiz.mode !== 'meaning';
-  if (needMeaning && !quiz.picked) return warn('請選一個中文意思');
+  if (needMeaning && !quiz.picked.size) return warn(quiz.answers.length > 1 ? '請選出所有正確的意思' : '請選一個中文意思');
   if (needPos && !quiz.selected.size) return warn('請至少選一個詞性');
   quiz.answered = true;
 
   const answer = new Set(q.pos);
-  const meaningOk = !needMeaning || quiz.picked === q.word;
+  const meaningOk = !needMeaning || (quiz.picked.size === quiz.answers.length && quiz.answers.every(a => quiz.picked.has(a)));
   const posOk = !needPos || (answer.size === quiz.selected.size && [...answer].every(p => quiz.selected.has(p)));
   if (needMeaning) markMeaning(q, false);
   if (needPos) markPos(q, false);
@@ -331,18 +351,19 @@ function finishAnswer(ok, msg = '', hinted = false) {
   const head = hinted
     ? '<span class="hint-tag">正確答案(看提示算答錯,已加入不熟單字)</span>'
     : ok ? '<span class="ok">✔ 答對了</span>' : `<span class="ng">✘ 答錯了${msg}</span>`;
-  $('feedback').innerHTML = head + `<div class="answer">${esc(q.word)}  ${esc(q.meaning)}</div>` + exampleHtml(q);
+  $('feedback').innerHTML = head + `<div class="answer">${esc(q.word)}</div>` + sensesHtml(q);
   $('btn-action').textContent = quiz.i + 1 < quiz.list.length ? '下一題' : '看結果';
   $('btn-action').classList.remove('hidden');
 }
 
-// 例句,並把單字(含變化形)標粗體
-function exampleHtml(q) {
-  const ex = q.example;
-  if (!ex) return '';
+// 每個意思和它的例句,例句裡的單字(含變化形)標粗體
+function sensesHtml(q) {
   const stem = q.word.length > 4 ? q.word.replace(/[ey]$/, '') : q.word;
   const re = new RegExp(`\\b(${stem}\\w*)`, 'gi');
-  return `<div class="example">${sayBtn('e', q.word, '唸例句')}<div class="en">${esc(ex.en).replace(re, '<b>$1</b>')}</div><div class="zh">${esc(ex.zh)}</div></div>`;
+  return q.senses.map(s =>
+    `<div class="sense"><span class="pos">${POS_LABEL[s.pos]}</span> ${esc(s.zh)}</div>` +
+    (s.ex || []).map(ex => `<div class="example">${sayEx(ex)}<div class="en">${esc(ex.en).replace(re, '<b>$1</b>')}</div><div class="zh">${esc(ex.zh)}</div></div>`).join('')
+  ).join('');
 }
 
 function next() {
@@ -355,7 +376,7 @@ $('btn-action').onclick = () => {
   if (!quiz.answered) submit();
   else next();
 };
-$('word-card').onclick = () => play('w', quiz.list[quiz.i].word);
+$('word-card').onclick = () => { const w = quiz.list[quiz.i].word; play('w', w, w); };
 
 // 提示:直接顯示正確答案與例句,這題算答錯
 $('btn-hint').onclick = () => {
@@ -403,7 +424,7 @@ function showResult() {
     $('btn-retry-wrong').classList.remove('hidden');
     quiz.wrongs.forEach(w => {
       const li = document.createElement('li');
-      li.innerHTML = sayBtn('w', w.word, '唸單字') + `<span class="w">${esc(w.word)}</span><span class="m">${esc(w.meaning)}</span>`;
+      li.innerHTML = sayWord(w.word) + `<span class="w">${esc(w.word)}</span><span class="m">${esc(w.meaning)}</span>`;
       ul.appendChild(li);
     });
   }
@@ -421,6 +442,10 @@ function openBrowse(sel) {
   if (browseSel !== 'weak' && !GROUPS[+browseSel - 1]) browseSel = '1';
   renderBrowse();
   show('browse');
+}
+
+function exRow(ex) {
+  return `<div class="ex">${sayEx(ex)}<div><div class="en">${esc(ex.en)}</div><div class="zh">${esc(ex.zh)}</div></div></div>`;
 }
 
 function renderBrowse() {
@@ -445,12 +470,14 @@ function renderBrowse() {
   list.forEach(w => {
     const li = document.createElement('li');
     li.innerHTML =
-      `<div class="row">` + sayBtn('w', w.word, '唸單字') +
+      `<div class="row">` + sayWord(w.word) +
       `<span class="w">${esc(w.word)}</span><span class="m">${esc(w.meaning)}</span>` +
       (weak ? `<span class="n">${rec(w.word).wrong ? '錯 ' + rec(w.word).wrong : '★'}</span><button class="x" aria-label="移除">✕</button>`
             : `<button class="x st${isWeak(w.word) ? ' on' : ''}" aria-label="加入不熟">${isWeak(w.word) ? '★' : '☆'}</button>`) +
       `</div>` +
-      (w.example ? `<div class="ex">${sayBtn('e', w.word, '唸例句')}<div><div class="en">${esc(w.example.en)}</div><div class="zh">${esc(w.example.zh)}</div></div></div>` : '');
+      (w.senses.length > 1 || w.senses.some(s => s.ex.length > 1)
+        ? w.senses.map(s => `<div class="sense"><span class="pos">${POS_LABEL[s.pos]}</span> ${esc(s.zh)}</div>` + s.ex.map(exRow).join('')).join('')
+        : w.senses[0].ex.map(exRow).join(''));
     li.querySelector('.x').onclick = () => {
       const rr = rec(w.word);
       if (weak || isWeak(w.word)) { rr.star = false; rr.streak = GRADUATE_STREAK; }   // 移出不熟

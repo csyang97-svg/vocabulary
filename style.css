@@ -114,6 +114,10 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .opt-label { color: #9a9a9a; font-size: 14px; margin: 4px 0 -2px; }
 .feedback .answer { margin-top: 4px; }
 .feedback .hint-tag { color: #f5c518; font-size: 15px; }
+.feedback .answer { font-size: 20px; font-weight: 600; }
+.feedback .sense { margin-top: 12px; text-align: left; color: #ddd; font-size: 17px; }
+.sense .pos { color: #8fb6ea; margin-right: 2px; }
+.feedback .sense + .example { margin-top: 6px; }
 .example {
   margin-top: 12px; text-align: left; background: #2c2c2c; border-left: 3px solid #6f9ad1;
   border-radius: 6px; padding: 10px 12px; font-size: 16px;
@@ -162,6 +166,10 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .rv-sense .x { color: #888; font-size: 18px; padding: 0 8px; }
 .rv-add { color: #8fb6ea; font-size: 14px; padding: 6px 0; }
 .rv-ex { width: 100%; margin-top: 6px; font-size: 14px; padding: 6px 10px; resize: vertical; min-height: 40px; }
+.rv-sense-box { border-left: 3px solid #3d5a80; padding-left: 8px; margin-top: 10px; }
+.rv-exrow { position: relative; padding-right: 30px; }
+.rv-exrow .x { position: absolute; right: 0; top: 8px; color: #888; font-size: 16px; }
+.rv-exs { margin-left: 4px; }
 .rv-have { flex: 1; font-size: 17px; color: #aaa; }
 .rv-head .rv-tag { margin: 0; }
 
@@ -183,5 +191,6 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .word-list.browse .ex .say { width: 30px; height: 30px; margin: -4px 0 0 0; }
 .word-list.browse .ex .en { color: #ccc; }
 .word-list.browse .ex .zh { color: #888; font-size: 13px; margin-top: 2px; }
+.word-list.browse .sense { font-size: 14px; color: #bbb; margin-top: 4px; }
 .word-list .x.st { color: #888; font-size: 22px; }
 .word-list .x.st.on { color: #f5c518; }
