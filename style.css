@@ -50,6 +50,7 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
   background: #2e3d55; border-radius: 30px; letter-spacing: 2px;
 }
 .big-btn.secondary { background: #3a3a3a; margin-top: 12px; }
+#btn-retry-origin { margin-top: 12px; }
 .link-btn { display: block; margin: 18px auto 0; color: #8fb6ea; font-size: 15px; padding: 8px; }
 .link-btn.danger { color: #e57373; margin-top: 30px; }
 .msg { color: #ff8a8a; min-height: 1em; margin: 14px 0 0; text-align: center; }

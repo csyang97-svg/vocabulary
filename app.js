@@ -393,9 +393,10 @@ $('stat-star-box').onclick = () => openBrowse('star');
 let quiz = null;
 
 let autoNext = null;   // 答對後自動下一題的計時器
-function startQuiz(list, mode) {
+// origin:重做錯題時,第一次練習答錯的那些字(結果頁可以選「再考一次原本錯的」)
+function startQuiz(list, mode, origin = null) {
   clearTimeout(autoNext);
-  quiz = { list: shuffle(list), mode, i: 0, correct: 0, wrongs: [], answered: false, selected: new Set(), picked: new Set() };
+  quiz = { list: shuffle(list), mode, origin, i: 0, correct: 0, wrongs: [], answered: false, selected: new Set(), picked: new Set() };
   show('quiz');
   renderQuestion();
 }
@@ -639,6 +640,10 @@ function showResult() {
   $('score-detail').textContent = `${total} 題答對 ${quiz.correct} 題`;
   const ul = $('wrong-list');
   ul.innerHTML = '';
+  const o = quiz.origin;
+  $('btn-retry-wrong').textContent = o ? `再考一次這次還錯的(${quiz.wrongs.length})` : '再練一次答錯的';
+  $('btn-retry-origin').textContent = `再考一次原本錯的(${o ? o.length : 0})`;
+  $('btn-retry-origin').classList.toggle('hidden', !o);
   if (!quiz.wrongs.length) {
     $('wrong-title').textContent = total ? '全部答對!🎉' : '';
     $('btn-retry-wrong').classList.add('hidden');
@@ -653,7 +658,8 @@ function showResult() {
   }
   show('result');
 }
-$('btn-retry-wrong').onclick = () => startQuiz(quiz.wrongs, quiz.mode);
+$('btn-retry-wrong').onclick = () => startQuiz(quiz.wrongs, quiz.mode, quiz.origin || quiz.wrongs);
+$('btn-retry-origin').onclick = () => startQuiz(quiz.origin, quiz.mode, quiz.origin);
 $('btn-home').onclick = () => { refreshHome(); show('home'); };
 
 // ---------- 複習單字(全部 / 不熟 / 星號,再按課本頁數分組) ----------
