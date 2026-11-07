@@ -36,6 +36,7 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .stats span { display: block; font-size: 32px; }
 .stats small { color: #aaa; }
 .weak-num { color: #ff8a8a; }
+.star-num { color: #f5c518; }
 
 .seg { display: flex; gap: 8px; flex-wrap: wrap; }
 .seg button {
@@ -182,7 +183,10 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .chip small { display: block; color: #999; font-size: 12px; }
 .chip.on { background: #3d5a80; border-color: #6f9ad1; }
 .chip.on small { color: #cfe0f5; }
-#stat-weak-box { cursor: pointer; }
+#stat-weak-box, #stat-star-box { cursor: pointer; }
+.chips.src { grid-template-columns: repeat(3, 1fr); }
+.sub-h { margin: 12px 0 6px; }
+.icon-btn.star.many { font-size: 18px; letter-spacing: -2px; width: auto; padding: 0 6px; }
 #browse-chips { margin-bottom: 4px; }
 #browse-info { margin: 12px 0; }
 .word-list.browse li { flex-direction: column; align-items: stretch; gap: 6px; }
@@ -194,6 +198,7 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .word-list.browse .sense { font-size: 14px; color: #bbb; margin-top: 4px; }
 .word-list .x.st { color: #888; font-size: 22px; }
 .word-list .x.st.on { color: #f5c518; }
+.word-list .x.st.many { font-size: 16px; letter-spacing: -2px; padding: 4px 4px; white-space: nowrap; }
 
 /* 多人版 */
 .who-box { display: flex; align-items: center; gap: 6px; color: #cfe0f5; font-size: 15px; }

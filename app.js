@@ -63,11 +63,14 @@ function setWords(list) {
 }
 function BROWSE_KEY_OF(uid) { return 'vocab_browse_' + (uid || 'guest'); }
 function groupOf(n) { return GROUPS.find(g => g.n === +n); }
+function groupNOf(w) { return Math.floor((w.page - 1) / PAGES_PER_GROUP) + 1; }
+function inGroups(list, groups) { return groups && groups.length ? list.filter(w => groups.includes(groupNOf(w))) : list; }
 function bookPages(g) { return `p.${g.from}–${g.to}`; }
 
 // ---------- 紀錄 ----------
 // 先存在瀏覽器 localStorage,登入過的本人再同步到伺服器 → GitHub 的 data/users/<id>.stats.json(換手機也在,別人也看得到)
 // 每個字 {wrong, right, streak, star, t};t = 最後修改時間,兩邊合併時取比較新的
+// star = 星號等級 0–3(自己標的,越多顆越不熟;舊版是 true/false,true 當 1 顆),和「不熟」(答錯自動加入)分開
 // 看別人的題庫(VIEW):紀錄從 GitHub 讀進來,這次做題的變化只留在記憶體,不保存
 const STORE_KEY = 'vocab_stats_' + UID;
 const DIRTY_KEY = 'vocab_dirty_' + UID;   // 還沒傳到伺服器
@@ -133,15 +136,25 @@ async function loadCloudStats() {
     if (JSON.stringify(stats) !== before) refreshHome();
   } catch {}
 }
+const STAR_MAX = 3;
 function isWeak(word) {
   const r = stats[word];
-  return !!r && (r.star || (r.wrong > 0 && r.streak < GRADUATE_STREAK));
+  return !!r && r.wrong > 0 && r.streak < GRADUATE_STREAK;
+}
+function starOf(word) {
+  const s = stats[word] && stats[word].star;
+  return s === true ? 1 : Math.max(0, Math.min(STAR_MAX, +s || 0));
+}
+function starText(n) { return n ? '★'.repeat(n) : '☆'; }
+function cycleStar(word) {   // ☆ → ★ → ★★ → ★★★ → ☆
+  const r = touch(rec(word));
+  r.star = (starOf(word) + 1) % (STAR_MAX + 1);
+  save();
 }
 function record(word, correct) {
   const r = touch(rec(word));
   if (correct) {
     r.right++; r.streak++;
-    if (r.streak >= GRADUATE_STREAK) r.star = false;
   } else {
     r.wrong++; r.streak = 0;
   }
@@ -151,6 +164,13 @@ function weakWords() {
   return WORDS.filter(w => isWeak(w.word))
     .sort((a, b) => rec(b.word).wrong - rec(a.word).wrong);
 }
+// levels:要哪幾級(空 = 全部星號);星星多的排前面
+function starWords(levels) {
+  return WORDS.filter(w => { const s = starOf(w.word); return s && (!levels || !levels.length || levels.includes(s)); })
+    .sort((a, b) => starOf(b.word) - starOf(a.word));
+}
+// src:'all' 全部、'weak' 不熟、'star' 星號
+function srcWords(src, levels) { return src === 'weak' ? weakWords() : src === 'star' ? starWords(levels) : WORDS; }
 
 // ---------- 工具 ----------
 const $ = id => document.getElementById(id);
@@ -162,11 +182,11 @@ function shuffle(arr) {
   }
   return a;
 }
-// 不熟的單字權重較高,比較容易被抽到
+// 不熟、星號的單字權重較高,比較容易被抽到
 function weightedPick(list, n) {
   return list
     .map(w => {
-      const weight = isWeak(w.word) ? 3 + rec(w.word).wrong : 1;
+      const weight = 1 + (isWeak(w.word) ? 2 + rec(w.word).wrong : 0) + 2 * starOf(w.word);
       return { w, key: Math.pow(Math.random(), 1 / weight) };
     })
     .sort((a, b) => b.key - a.key)
@@ -240,15 +260,21 @@ function esc(s) {
 }
 
 // ---------- 首頁 ----------
-// scope:'all' 全部、'weak' 不熟,或是選了哪幾頁(陣列,1 開始)。設定記在 localStorage,下次打開一樣
+// 範圍 = src('all' 全部、'weak' 不熟、'star' 星號)+ levels(星號要哪幾級)+ groups(哪幾組課本頁,空 = 全部頁)。設定記在 localStorage,下次打開一樣
 const HOME_KEY = 'vocab_home_' + (UID || 'guest');
-const settings = Object.assign({ mode: 'meaning', scope: 'all', count: 'all', sound: 'on' },
+const settings = Object.assign({ mode: 'meaning', src: 'all', groups: [], levels: [], count: 'all', sound: 'on' },
   (() => { try { return JSON.parse(localStorage.getItem(HOME_KEY)) || {}; } catch { return {}; } })());
 function saveSettings() { localStorage.setItem(HOME_KEY, JSON.stringify(settings)); }
 if (settings.groupV !== 2) {   // 以前的「第 n 頁」是每 40 個字一頁,編號意思不同了 → 重設
   if (Array.isArray(settings.scope)) settings.scope = 'all';
   localStorage.removeItem(BROWSE_KEY_OF(UID));
   settings.groupV = 2;
+  saveSettings();
+}
+if ('scope' in settings) {   // 以前是 scope:'all'/'weak'/[組]
+  if (settings.scope === 'weak') settings.src = 'weak';
+  else if (Array.isArray(settings.scope)) settings.groups = settings.scope;
+  delete settings.scope;
   saveSettings();
 }
 settings.mode = settings.mode === 'pos' || settings.mode === 'both' ? 'both' : 'meaning';   // 一定考中文意思,只選要不要加考詞性(以前的「只考詞性」改成意思+詞性)
@@ -289,38 +315,61 @@ function chip(label, sub, on, onclick) {
 }
 
 function scopePool() {
-  if (settings.scope === 'weak') return weakWords();
-  if (Array.isArray(settings.scope)) return settings.scope.flatMap(n => groupOf(n)?.words || []);
-  return WORDS;
+  return inGroups(srcWords(settings.src, settings.levels), settings.groups);
+}
+
+const SRC_LABEL = { all: '全部單字', weak: '不熟', star: '星號' };
+// 來源、星號等級、課本頁數三排按鈕(首頁和複習單字共用);sel = {src, levels, groups},onchange 之後重畫
+function renderFilter(prefix, sel, onchange, multiGroups) {
+  const srcBox = $(prefix + '-src');
+  srcBox.innerHTML = '';
+  for (const k of ['all', 'weak', 'star'])
+    srcBox.appendChild(chip(SRC_LABEL[k], `${srcWords(k).length} 字`, sel.src === k, () => { sel.src = k; onchange(); }));
+
+  $(prefix + '-level-box').classList.toggle('hidden', sel.src !== 'star');
+  const lvBox = $(prefix + '-levels');
+  lvBox.innerHTML = '';
+  if (sel.src === 'star') for (let lv = 1; lv <= STAR_MAX; lv++) {
+    const on = sel.levels.includes(lv);
+    lvBox.appendChild(chip(starText(lv), `${starWords([lv]).length} 字`, on, () => {
+      sel.levels = on ? sel.levels.filter(x => x !== lv) : [...sel.levels, lv].sort();
+      onchange();
+    }));
+  }
+
+  const base = srcWords(sel.src, sel.levels);
+  const box = $(prefix + '-chips');
+  box.innerHTML = '';
+  if (sel.src !== 'all' || multiGroups)
+    box.appendChild(chip('全部頁', `${base.length} 字`, !sel.groups.length, () => { sel.groups = []; onchange(); }));
+  GROUPS.forEach(g => {
+    const cnt = inGroups(base, [g.n]).length, on = sel.groups.includes(g.n);
+    if (!cnt && !on && sel.src !== 'all') return;   // 不熟/星號:這組沒有字就不顯示
+    box.appendChild(chip(bookPages(g), `${cnt} 字`, on, () => {
+      sel.groups = !multiGroups ? [g.n] : on ? sel.groups.filter(n => n !== g.n) : [...sel.groups, g.n].sort((a, b) => a - b);
+      onchange();
+    }));
+  });
 }
 
 function renderScopeChips() {
-  if (Array.isArray(settings.scope)) {   // 題庫變動後,不存在的頁拿掉
-    settings.scope = settings.scope.filter(n => groupOf(n));
-    if (!settings.scope.length) settings.scope = 'all';
-  }
-  const box = $('scope-chips');
-  box.innerHTML = '';
-  const pick = v => { settings.scope = v; saveSettings(); renderScopeChips(); $('home-msg').textContent = ''; };
-  box.appendChild(chip('全部', `${WORDS.length} 字`, settings.scope === 'all', () => pick('all')));
-  box.appendChild(chip('不熟', `${weakWords().length} 字`, settings.scope === 'weak', () => pick('weak')));
-  GROUPS.forEach(g => {
-    const on = Array.isArray(settings.scope) && settings.scope.includes(g.n);
-    box.appendChild(chip(bookPages(g), `${g.words.length} 字`, on, () => {
-      const cur = Array.isArray(settings.scope) ? settings.scope : [];
-      const nextSel = on ? cur.filter(n => n !== g.n) : [...cur, g.n].sort((a, b) => a - b);
-      pick(nextSel.length ? nextSel : 'all');
-    }));
-  });
-  const n = scopePool().length;
-  $('scope-info').textContent = settings.scope === 'all' ? `考全部 ${n} 個字`
-    : settings.scope === 'weak' ? `考不熟的 ${n} 個字`
-    : `已選 ${settings.scope.map(n => bookPages(groupOf(n))).join('、')},共 ${n} 個字`;
+  settings.groups = (settings.groups || []).filter(n => groupOf(n));   // 題庫變動後,不存在的組拿掉
+  settings.levels = settings.levels || [];
+  renderFilter('scope', settings, () => { saveSettings(); renderScopeChips(); $('home-msg').textContent = ''; }, true);
+  $('scope-info').textContent = `考${filterDesc(settings)},共 ${scopePool().length} 個字`;
+}
+function filterDesc(sel) {
+  const where = sel.groups.length ? sel.groups.map(n => bookPages(groupOf(n))).join('、') + ' ' : '';
+  const what = sel.src === 'weak' ? '的不熟單字'
+    : sel.src === 'star' ? `的${sel.levels.length ? ' ' + sel.levels.map(starText).join('、') + ' ' : ''}星號單字`
+    : where ? '' : '全部';
+  return (where + what).replace(/^的/, '').trim();
 }
 
 function refreshHome() {
   $('stat-total').textContent = WORDS.length;
   $('stat-weak').textContent = weakWords().length;
+  $('stat-star').textContent = starWords().length;
   $('home-msg').textContent = '';
   renderScopeChips();
 }
@@ -329,7 +378,8 @@ $('btn-start').onclick = () => {
   const pool = scopePool();
   if (!pool.length) {
     $('home-msg').textContent = !WORDS.length ? '還沒有單字,先按下面「新增課本頁」上傳課本照片'
-      : settings.scope === 'weak' ? '目前沒有不熟的單字 👍' : '這個範圍沒有單字';
+      : settings.src === 'weak' && !weakWords().length ? '目前沒有不熟的單字 👍'
+      : settings.src === 'star' && !starWords().length ? '還沒有星號單字(做題時點右上角 ☆,或在「複習單字」裡點)' : '這個範圍沒有單字';
     return;
   }
   const n = settings.count === 'all' ? pool.length : Math.min(+settings.count, pool.length);
@@ -337,6 +387,7 @@ $('btn-start').onclick = () => {
 };
 $('btn-browse').onclick = () => openBrowse();
 $('stat-weak-box').onclick = () => openBrowse('weak');
+$('stat-star-box').onclick = () => openBrowse('star');
 
 // ---------- 測驗 ----------
 let quiz = null;
@@ -565,15 +616,11 @@ $('btn-hint').onclick = () => {
 
 function updateStar() {
   const q = quiz.list[quiz.i];
-  const r = stats[q.word];
-  $('btn-star').textContent = r && r.star ? '★' : '☆';
+  const n = starOf(q.word);
+  $('btn-star').textContent = starText(n);
+  $('btn-star').classList.toggle('many', n > 1);
 }
-$('btn-star').onclick = () => {
-  const r = touch(rec(quiz.list[quiz.i].word));
-  r.star = !r.star;
-  save();
-  updateStar();
-};
+$('btn-star').onclick = () => { cycleStar(quiz.list[quiz.i].word); updateStar(); };
 
 $('btn-end').onclick = () => {
   clearTimeout(autoNext);
@@ -609,13 +656,16 @@ function showResult() {
 $('btn-retry-wrong').onclick = () => startQuiz(quiz.wrongs, quiz.mode);
 $('btn-home').onclick = () => { refreshHome(); show('home'); };
 
-// ---------- 複習單字(每 6 頁課本一組 + 不熟) ----------
+// ---------- 複習單字(全部 / 不熟 / 星號,再按課本頁數分組) ----------
 const BROWSE_KEY = BROWSE_KEY_OF(UID);
-let browseSel = localStorage.getItem(BROWSE_KEY) || '1';   // '1'、'2'… 或 'weak'
+const browse = (() => {   // {src, levels, groups:[一組] 或 [](全部頁)};以前存的是 '1'、'2'… 或 'weak'
+  const v = localStorage.getItem(BROWSE_KEY) || '';
+  try { const o = JSON.parse(v); if (o && o.src) return { src: o.src, levels: o.levels || [], groups: o.groups || [] }; } catch {}
+  return v === 'weak' ? { src: 'weak', levels: [], groups: [] } : { src: 'all', levels: [], groups: v ? [+v] : [] };
+})();
 
-function openBrowse(sel) {
-  if (sel) browseSel = sel;
-  if (browseSel !== 'weak' && !groupOf(browseSel)) browseSel = GROUPS.length ? String(GROUPS[0].n) : 'weak';
+function openBrowse(src) {
+  if (src && src !== browse.src) Object.assign(browse, { src, levels: [], groups: [] });
   renderBrowse();
   show('browse');
 }
@@ -624,50 +674,51 @@ function exRow(ex) {
   return `<div class="ex">${sayEx(ex)}<div><div class="en">${esc(ex.en)}</div><div class="zh">${esc(ex.zh)}</div></div></div>`;
 }
 
-function renderBrowse() {
-  localStorage.setItem(BROWSE_KEY, browseSel);
-  const weak = browseSel === 'weak';
-  const box = $('browse-chips');
-  box.innerHTML = '';
-  GROUPS.forEach(g => box.appendChild(chip(bookPages(g), `${g.words.length} 字`, browseSel === String(g.n), () => { browseSel = String(g.n); renderBrowse(); })));
-  box.appendChild(chip('不熟', `${weakWords().length} 字`, weak, () => { browseSel = 'weak'; renderBrowse(); }));
+const BROWSE_INFO = {
+  all: '點 ☆ 可以加星號,多點幾下變 ★★、★★★(越多顆越不熟),再點一下就拿掉。',
+  weak: '答錯會自動加入;同一個單字連續答對 3 次會自動移出。點 ✕ 可以手動移除。',
+  star: '自己標的星號,不會自動移出。點星星可以改等級:★ → ★★ → ★★★ → 拿掉。上面可以只看某幾級。',
+};
 
-  const list = weak ? weakWords() : groupOf(browseSel).words;
-  $('browse-info').textContent = weak
-    ? '答錯會自動加入;同一個單字連續答對 3 次會自動移出。點 ✕ 可以手動移除;在其他頁點 ☆ 也可以加進來。'
-    : `課本 ${bookPages(groupOf(browseSel))}:${list.length} 個字。點 ☆ 加入不熟。`;
-  $('btn-reset').classList.toggle('hidden', !weak);
+function renderBrowse() {
+  browse.groups = browse.groups.filter(n => groupOf(n));
+  if (browse.src === 'all' && !browse.groups.length && GROUPS.length) browse.groups = [GROUPS[0].n];   // 全部單字一次看一組
+  localStorage.setItem(BROWSE_KEY, JSON.stringify(browse));
+  renderFilter('browse', browse, renderBrowse, false);
+
+  const list = inGroups(srcWords(browse.src, browse.levels), browse.groups);
+  $('browse-info').textContent = (browse.src === 'all' ? `課本 ${filterDesc(browse)}:${list.length} 個字。` : `${filterDesc(browse)}:${list.length} 個字。`) + BROWSE_INFO[browse.src];
+  $('btn-reset').classList.toggle('hidden', browse.src === 'all');
   $('browse-quiz').classList.toggle('hidden', !list.length);
-  $('browse-quiz').textContent = weak ? `考不熟的單字(${list.length})` : `考這一頁(${list.length})`;
+  $('browse-quiz').textContent = `考這些單字(${list.length})`;
 
   const ul = $('browse-list');
   ul.innerHTML = '';
-  if (!list.length) { ul.innerHTML = `<li class="empty">${WORDS.length ? '目前沒有不熟的單字 👍' : '還沒有單字,先上傳課本照片'}</li>`; return; }
+  if (!list.length) {
+    ul.innerHTML = `<li class="empty">${!WORDS.length ? '還沒有單字,先上傳課本照片'
+      : browse.src === 'weak' ? '目前沒有不熟的單字 👍' : browse.src === 'star' ? '這裡還沒有星號單字' : '沒有單字'}</li>`;
+    return;
+  }
   list.forEach(w => {
     const li = document.createElement('li');
+    const st = starOf(w.word), wrong = rec(w.word).wrong;
     li.innerHTML =
       `<div class="row">` + sayWord(w.word) +
       `<span class="w">${esc(w.word)}</span><span class="m">${esc(w.meaning)}</span>` +
-      (weak ? `<span class="n">${rec(w.word).wrong ? '錯 ' + rec(w.word).wrong : '★'}</span><button class="x" aria-label="移除">✕</button>`
-            : `<button class="x st${isWeak(w.word) ? ' on' : ''}" aria-label="加入不熟">${isWeak(w.word) ? '★' : '☆'}</button>`) +
+      (browse.src === 'weak' ? `<span class="n">錯 ${wrong}</span>` : '') +
+      `<button class="x st${st ? ' on' : ''}${st > 1 ? ' many' : ''}" aria-label="星號">${starText(st)}</button>` +
+      (browse.src === 'weak' ? `<button class="x rm" aria-label="移出不熟">✕</button>` : '') +
       `</div>` +
       (w.senses.length > 1 || w.senses.some(s => s.ex.length > 1)
         ? w.senses.map(s => `<div class="sense"><span class="pos">${POS_LABEL[s.pos]}</span> ${esc(s.zh)}</div>` + s.ex.map(exRow).join('')).join('')
         : w.senses[0].ex.map(exRow).join(''));
-    li.querySelector('.x').onclick = () => {
-      const rr = touch(rec(w.word));
-      if (weak || isWeak(w.word)) { rr.star = false; rr.streak = GRADUATE_STREAK; }   // 移出不熟
-      else rr.star = true;
-      save();
-      renderBrowse();
-    };
+    li.querySelector('.st').onclick = () => { cycleStar(w.word); renderBrowse(); };
+    const rm = li.querySelector('.rm');
+    if (rm) rm.onclick = () => { touch(rec(w.word)).streak = GRADUATE_STREAK; save(); renderBrowse(); };
     ul.appendChild(li);
   });
 }
-$('browse-quiz').onclick = () => {
-  const list = browseSel === 'weak' ? weakWords() : groupOf(browseSel).words;
-  startQuiz(list, settings.mode);
-};
+$('browse-quiz').onclick = () => startQuiz(inGroups(srcWords(browse.src, browse.levels), browse.groups), settings.mode);
 document.querySelectorAll('.btn-to-home').forEach(b => b.onclick = () => { refreshHome(); show('home'); });
 $('btn-reset').onclick = () => {
   if (!confirm('確定要清除所有練習紀錄嗎?')) return;
