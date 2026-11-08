@@ -52,7 +52,149 @@ function upMsg(text, err = false) {
 }
 function upShow(part) {
   ['up-login', 'up-form', 'up-progress'].forEach(id => $(id).classList.toggle('hidden', id !== part));
-  $('up-resume').classList.toggle('hidden', part !== 'up-form' || !localStorage.getItem(JOB_KEY));
+  $('up-resume').classList.toggle('hidden', part !== 'up-form' || addTab !== 'photo' || !localStorage.getItem(JOB_KEY));
+}
+
+// ---------- 加入新單字:「從照片」或「手動輸入」 ----------
+const TAB_KEY = 'vocab_add_tab';
+let addTab = localStorage.getItem(TAB_KEY) || 'photo';
+function setAddTab(t) {
+  addTab = t;
+  localStorage.setItem(TAB_KEY, t);
+  document.querySelectorAll('#add-tabs .chip').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  $('up-photo').classList.toggle('hidden', t !== 'photo');
+  $('up-manual').classList.toggle('hidden', t !== 'manual');
+  upShow('up-form');
+  if (t === 'manual' && !$('mn-senses').children.length) resetManual();
+}
+document.querySelectorAll('#add-tabs .chip').forEach(b => b.onclick = () => setAddTab(b.dataset.tab));
+
+// 手動輸入:單字、頁碼、每個意思(詞性、中文意思、英文例句、例句翻譯)
+function senseBox(s = {}) {
+  const d = document.createElement('div');
+  d.className = 'mn-sense';
+  d.innerHTML = `<div class="mn-head"><span class="mn-n"></span><button class="x" aria-label="刪除這個意思">✕</button></div>
+    <div class="mn-row"><select class="txt mn-pos"><option value="">詞性</option>${['n', 'v', 'adj', 'adv', 'prep', 'conj', 'pron'].map(p => `<option value="${p}">${p}.</option>`).join('')}</select>
+    <input class="txt mn-zh" placeholder="中文意思"></div>
+    <textarea class="txt mn-en" rows="2" autocapitalize="sentences" spellcheck="false" placeholder="英文例句"></textarea>
+    <textarea class="txt mn-tw" rows="2" placeholder="例句的中文翻譯"></textarea>`;
+  d.querySelector('.mn-pos').value = s.pos || '';
+  d.querySelector('.mn-zh').value = s.zh || '';
+  d.querySelector('.mn-en').value = s.en || '';
+  d.querySelector('.mn-tw').value = s.tw || '';
+  d.querySelector('.x').onclick = () => { d.remove(); if (!$('mn-senses').children.length) $('mn-senses').appendChild(senseBox()); numberSenses(); };
+  return d;
+}
+function numberSenses() {
+  const all = [...$('mn-senses').children];
+  all.forEach((d, i) => { d.querySelector('.mn-n').textContent = all.length > 1 ? `意思 ${i + 1}` : '意思'; });
+}
+function setSenses(list) {
+  $('mn-senses').innerHTML = '';
+  (list.length ? list : [{}]).forEach(s => $('mn-senses').appendChild(senseBox(s)));
+  numberSenses();
+}
+function readSenses() {
+  return [...$('mn-senses').children].map(d => ({
+    pos: d.querySelector('.mn-pos').value, zh: d.querySelector('.mn-zh').value.trim(),
+    en: d.querySelector('.mn-en').value.trim(), tw: d.querySelector('.mn-tw').value.trim(),
+  }));
+}
+function resetManual() {
+  $('mn-word').value = ''; $('mn-page').value = '';
+  setSenses([]);
+  $('mn-notes').classList.add('hidden');
+  $('mn-msg').textContent = '';
+  guessPageHint();
+}
+$('mn-more').onclick = () => { $('mn-senses').appendChild(senseBox()); numberSenses(); };
+
+// 課本單字是照字母排的:用題庫裡前後兩個字的頁碼猜
+// 只在前後都有字時猜(比題庫第一個字前面、最後一個字後面的就猜不出來,要自己填)
+function guessPage(word) {
+  if (BY_WORD[word]) return BY_WORD[word].page;
+  const list = WORDS.slice().sort((a, b) => a.word.localeCompare(b.word));
+  const next = list.find(w => w.word.localeCompare(word) > 0);
+  const prev = [...list].reverse().find(w => w.word.localeCompare(word) < 0);
+  return word && prev && next ? prev.page : null;
+}
+function guessPageHint() {
+  const w = $('mn-word').value.trim().toLowerCase();
+  const g = guessPage(w);
+  $('mn-page').placeholder = !w ? '可不填,會照字母順序猜' : g ? `可不填,照字母順序猜是 p.${g}` : '這個字要自己填頁碼';
+}
+$('mn-word').oninput = guessPageHint;
+
+$('mn-auto').onclick = async () => {
+  const word = $('mn-word').value.trim();
+  if (!word) { $('mn-msg').textContent = '請先輸入單字'; $('mn-word').focus(); return; }
+  const btn = $('mn-auto');
+  btn.disabled = true; btn.textContent = '產生中(約 10–30 秒)…';
+  $('mn-msg').textContent = '';
+  try {
+    const d = await api('/api/autofill', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word, senses: readSenses().filter(s => s.pos || s.zh || s.en || s.tw) }),
+    });
+    $('mn-word').value = d.word;
+    setSenses(d.senses);
+    guessPageHint();
+    const have = BY_WORD[d.word];
+    const notes = [...d.notes];
+    if (have) notes.push(`題庫裡已經有 ${d.word}(p.${have.page}):加入時只會補上新的意思和例句。`);
+    $('mn-notes').innerHTML = notes.length ? '<b>已自動改正:</b><ul>' + notes.map(n => `<li>${esc(n)}</li>`).join('') + '</ul>' : '已補上空白的欄位,沒有發現錯誤。';
+    $('mn-notes').classList.remove('hidden');
+  } catch (e) {
+    $('mn-msg').textContent = e.message || '自動產生失敗';
+  } finally {
+    btn.disabled = false; btn.textContent = '✨ 自動產生';
+  }
+};
+
+$('mn-add').onclick = async () => {
+  const say = t => { $('mn-msg').textContent = t; };
+  const word = $('mn-word').value.trim().toLowerCase();
+  if (!/^[a-z][a-z\- ]*$/.test(word)) { say('請輸入英文單字'); return; }
+  let page = parseInt($('mn-page').value, 10);
+  if (!$('mn-page').value.trim()) page = guessPage(word);
+  if (!(page >= 1 && page <= 999)) { say('請填課本頁碼(這個字在題庫所有單字的最前面或最後面,猜不出頁碼)'); $('mn-page').focus(); return; }
+  const raw = readSenses();
+  if (raw.some(s => (s.zh || s.en) && !s.pos)) { say('每個意思都要選詞性(或按「自動產生」)'); return; }
+  const senses = raw.filter(s => s.pos && s.zh).map(s => ({ pos: s.pos, zh: s.zh, ex: s.en ? [{ en: s.en, zh: s.tw }] : [] }));
+  if (!senses.length) { say('至少要有一個詞性和中文意思(或按「自動產生」)'); return; }
+  const btn = $('mn-add');
+  btn.disabled = true; btn.textContent = '加入中(產生語音)…';
+  say('');
+  try {
+    const entry = { word, page, senses };
+    const d = await api('/api/commit', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ manual: true, words: [entry] }),
+    });
+    if (d.skipped.length) { say(`題庫裡已經有 ${word},而且沒有新的意思或例句。`); return; }
+    addLocal(entry);
+    resetManual();
+    say(d.added.length ? `已加入 ${word}(p.${page})!可以繼續輸入下一個字。` : `已補充 ${word} 的意思/例句。`);
+  } catch (e) {
+    say(e.message || '加入失敗');
+  } finally {
+    btn.disabled = false; btn.textContent = '加入題庫';
+  }
+};
+// 同一個意思(例如「敏銳」和「敏銳的,熱切的」),和伺服器的 zh_overlap 一樣
+function zhSet(zh) { return new Set(zh.split(/[,,、;;\/]/).map(t => t.trim().replace(/的$/, '')).filter(Boolean)); }
+function zhOverlap(a, b) { const A = zhSet(a); return [...zhSet(b)].some(t => A.has(t)); }
+// 先放進這支手機的題庫,馬上可以練習(網站約 1–2 分鐘後更新)
+function addLocal(e) {
+  const raw = WORDS.map(w => ({ word: w.word, page: w.page, senses: w.senses.map(s => ({ ...s, ex: [...s.ex] })) }));
+  const old = raw.find(w => w.word === e.word);
+  if (!old) raw.push(e);
+  else for (const s of e.senses) {
+    const same = old.senses.find(o => o.pos === s.pos && zhOverlap(o.zh, s.zh));
+    if (!same) old.senses.push(s);
+    else for (const x of s.ex) if (!same.ex.some(y => y.en === x.en)) same.ex.push(x);
+  }
+  setWords(raw);
 }
 
 $('btn-upload').onclick = openUpload;
@@ -84,7 +226,7 @@ async function openUpload() {
   }
   upMsg(server.strata ? '' : '⚠ 伺服器的辨識模型目前沒開,上傳後會等它開好才處理。', !server.strata);
   resetForm();
-  upShow('up-form');
+  setAddTab(addTab);
 }
 
 // 上傳要登入(暱稱 + 密碼),而且只能上傳到自己的題庫

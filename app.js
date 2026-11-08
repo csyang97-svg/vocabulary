@@ -377,7 +377,7 @@ function refreshHome() {
 $('btn-start').onclick = () => {
   const pool = scopePool();
   if (!pool.length) {
-    $('home-msg').textContent = !WORDS.length ? '還沒有單字,先按下面「新增課本頁」上傳課本照片'
+    $('home-msg').textContent = !WORDS.length ? '還沒有單字,先按下面「加入新單字」拍課本照片或手動輸入'
       : settings.src === 'weak' && !weakWords().length ? '目前沒有不熟的單字 👍'
       : settings.src === 'star' && !starWords().length ? '還沒有星號單字(做題時點右上角 ☆,或在「複習單字」裡點)' : '這個範圍沒有單字';
     return;
@@ -861,15 +861,15 @@ async function init() {
   loadCloudStats().then(syncStats);
   if (VIEW) return;
   if (!authOf().token && Object.keys(stats).length) {   // 沒登入過:紀錄只在這支手機
-    $('home-note').textContent = '目前不熟單字只存在這支手機。到「新增課本頁」登入一次,之後就會自動存到雲端,換手機也看得到。';
+    $('home-note').textContent = '目前不熟單字只存在這支手機。到「加入新單字」登入一次,之後就會自動存到雲端,換手機也看得到。';
     $('home-note').classList.remove('hidden');
   }
   if (localStorage.getItem('vocab_new_' + UID)) {   // 剛建立:提醒存網址
     localStorage.removeItem('vocab_new_' + UID);
-    $('home-note').textContent = '題庫建立好了!請把這個網頁「加入主畫面」,或複製下面的專屬網址,之後打開就是你的題庫。\n接著按「新增課本頁」上傳課本照片。';
+    $('home-note').textContent = '題庫建立好了!請把這個網頁「加入主畫面」,或複製下面的專屬網址,之後打開就是你的題庫。\n接著按「加入新單字」拍課本照片或手動輸入單字。';
     $('home-note').classList.remove('hidden');
   } else if (!WORDS.length) {
-    $('home-note').textContent = '還沒有單字,先按下面「新增課本頁」上傳課本照片。';
+    $('home-note').textContent = '還沒有單字,先按下面「加入新單字」拍課本照片或手動輸入。';
     $('home-note').classList.remove('hidden');
   }
 }

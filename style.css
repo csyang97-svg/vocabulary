@@ -250,3 +250,14 @@ body:not(.viewing) .only-view, body.viewing .no-view { display: none !important;
 .search-box .x { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); color: #888; font-size: 18px; padding: 6px 10px; }
 .search-box input::-webkit-search-cancel-button { display: none; }
 .word-list .n.pg { color: #999; }
+.chips.src.two { grid-template-columns: repeat(2, 1fr); margin-bottom: 14px; }
+.fld { display: block; color: #aaa; font-size: 14px; margin: 12px 0 4px; }
+.mn-sense { background: #2c2c2c; border: 1px solid #444; border-radius: 10px; padding: 8px 10px 10px; margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.mn-head { display: flex; justify-content: space-between; align-items: center; color: #aaa; font-size: 14px; }
+.mn-head .x { color: #888; font-size: 16px; padding: 2px 8px; }
+.mn-row { display: flex; gap: 8px; }
+.mn-row .mn-pos { width: 96px; flex: none; }
+.mn-sense textarea.txt { resize: vertical; font-size: 16px; }
+#mn-notes ul { margin: 4px 0 0; padding-left: 20px; }
+#mn-auto { margin-top: 14px; }
+#mn-notes { text-align: left; }
