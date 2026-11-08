@@ -10,6 +10,7 @@
   {"word":"addict","page":2,"senses":[{"pos":"n","zh":"上癮者","ex":[{"en":"She is a drug addict.","zh":"她吸毒成癮。","audio":"558b6f846cf3"}]},{"pos":"v","zh":"使成癮","ex":[{"en":"She is addicted to drugs.","zh":"她吸毒成癮。","audio":"a12542ce3c13"}]}]},
   {"word":"adequate","page":2,"senses":[{"pos":"adj","zh":"足夠的","ex":[]}]},
   {"word":"admirable","page":2,"senses":[{"pos":"adj","zh":"值得讚揚的","ex":[{"en":"Honesty is admirable.","zh":"誠實值得讚美。","audio":"44756f8a2efe"}]}]},
+  {"word":"defendant","page":2,"senses":[{"pos":"n","zh":"被告","ex":[{"en":"The defendant pleaded not guilty to the charges.","zh":"被告對指控表示不認罪。","audio":"0bb86ed1de0c"}]}]},
   {"word":"demonstrate","page":25,"senses":[{"pos":"v","zh":"論證","ex":[{"en":"The study demonstrates the link between poverty and malnutrition.","zh":"這個研究證明貧窮與營養不良之間的關聯。","audio":"14fc603bbd19"}]},{"pos":"v","zh":"實地示範","ex":[{"en":"The teaching assistant demonstrated how to use the equipment.","zh":"助教實地示範如何使用這些設備。","audio":"4f6dffd8e1f1"}]},{"pos":"v","zh":"舉行示威","ex":[{"en":"Many people gathered to demonstrate against the new policy.","zh":"很多人聚集在一起為反對這個新政策示威。","audio":"e5970c627d44"}]}]},
   {"word":"depart","page":25,"senses":[{"pos":"v","zh":"出發","ex":[{"en":"My flight departs at 6.00 a.m. from London.","zh":"我的班機早上六點從倫敦起飛。","audio":"0c363b89e844"}]}]},
   {"word":"departure","page":25,"senses":[{"pos":"n","zh":"離開","ex":[{"en":"The plane's departure was on schedule.","zh":"飛機準時起飛。","audio":"0c00fb7a1db4"}]}]},
