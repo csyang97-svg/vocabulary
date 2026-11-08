@@ -151,6 +151,7 @@
   {"word":"idle","page":45,"senses":[{"pos":"adj","zh":"(人)閒散的, (機器)空轉的","ex":[{"en":"They didn't want to live idle lives.","zh":"他們不想過閒散的生活。","audio":"67cc21fd258e"}]},{"pos":"v","zh":"無所事事, 虛度","ex":[{"en":"They idled their time away in the pub.","zh":"他們在酒館裡鬼混。","audio":"deb85012dfcd"}]}]},
   {"word":"ignorance","page":45,"senses":[{"pos":"n","zh":"無知","ex":[{"en":"Please forgive my ignorance.","zh":"請原諒我的無知。","audio":"649d07369985"}]}]},
   {"word":"ignorant","page":45,"senses":[{"pos":"adj","zh":"一無所知的, 無知的","ex":[{"en":"Many young people are ignorant about current politics.","zh":"許多年輕人對當前的政治一無所知。","audio":"826b6c5352f5"}]}]},
+  {"word":"illegal","page":45,"senses":[{"pos":"adj","zh":"非法的,違法的","ex":[{"en":"It is illegal to drive without a license.","zh":"無照駕駛是非法的。","audio":"0475e72866aa"}]},{"pos":"n","zh":"非法移民","ex":[{"en":"The government is trying to deport illegal immigrants.","zh":"政府正試圖遣返非法移民。","audio":"188fe82e8fc0"}]}]},
   {"word":"illustration","page":45,"senses":[{"pos":"n","zh":"插圖,說明","ex":[{"en":"Illustration is often used in teaching children.","zh":"兒童教育中常使用圖示法。","audio":"7548729ac95f"}]}]},
   {"word":"imaginary","page":46,"senses":[{"pos":"adj","zh":"虛構的","ex":[{"en":"Superman is little Johnny's imaginary friend.","zh":"超人是小強尼想像中的朋友。","audio":"95a52ae084dd"}]}]},
   {"word":"imaginative","page":46,"senses":[{"pos":"adj","zh":"創新的,有創意的","ex":[{"en":"The imaginative author wove fascinating adventures.","zh":"那位想像力豐富的作家編織了引人入勝的冒險故事。","audio":"a92a25fb193a"}]}]},
