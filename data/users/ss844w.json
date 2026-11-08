@@ -205,6 +205,7 @@
   {"word":"manufacture","page":55,"senses":[{"pos":"v","zh":"製造,大量製造","ex":[{"en":"This car was designed and manufactured in Italy.","zh":"這輛車在義大利設計製造。","audio":"03b251f1da2c"}]},{"pos":"v","zh":"捏造","ex":[]}]},
   {"word":"marathon","page":55,"senses":[{"pos":"n","zh":"馬拉松比賽,耐力比賽","ex":[{"en":"A marathon runner has to be able to keep running for 42.195 kilometers, without any intermediate supply of water and food.","zh":"一位馬拉松跑者要能連續跑 42.195 公里，期間接受最少量的食物和水供應。","audio":"0210cb0a3b6e"}]}]},
   {"word":"margin","page":55,"senses":[{"pos":"n","zh":"邊界,邊緣,留好空白以容納註記","ex":[{"en":"Use double spacing and wide margins to leave room for comments.","zh":"隔行，留寬邊，才好留空白寫註記。","audio":"7db3f84fff39"}]}]},
+  {"word":"match","page":55,"senses":[{"pos":"n","zh":"比賽","ex":[{"en":"The football match ended in a draw.","zh":"這場足球比賽以平局結束。","audio":"cec38ca976d4"}]},{"pos":"v","zh":"匹配,相配","ex":[{"en":"This tie matches your shirt perfectly.","zh":"這條領帶和你的襯衫非常相配。","audio":"4031084f6433"}]}]},
   {"word":"measurable","page":56,"senses":[{"pos":"adj","zh":"可測量的","ex":[{"en":"He has made measurable improvements in his English.","zh":"他的英文有明顯的進步。","audio":"3ef8657dba11"}]}]},
   {"word":"mechanic","page":56,"senses":[{"pos":"n","zh":"技工","ex":[{"en":"Any mechanic will have this problem.","zh":"任何一個技工都會碰到這種問題。","audio":"3455459d156e"}]}]},
   {"word":"mechanical","page":56,"senses":[{"pos":"adj","zh":"機械的、不經思考的","ex":[{"en":"Any machine will have an emergency landing due to mechanical problems.","zh":"由於機械問題，飛機必須安全降落。","audio":"86089afbaf0a"}]}]},
