@@ -686,15 +686,30 @@ const BROWSE_INFO = {
   star: '自己標的星號,不會自動移出。點星星可以改等級:★ → ★★ → ★★★ → 拿掉。上面可以只看某幾級。',
 };
 
+// 搜尋:英文(完全一樣 → 開頭一樣 → 包含)或中文意思包含;有輸入時不看上面的分類
+function searchQuery() { return $('browse-search').value.trim().toLowerCase(); }
+function searchWords(q) {
+  const rank = w => w.word === q ? 0 : w.word.startsWith(q) ? 1 : w.word.includes(q) ? 2 : w.senses.some(s => s.zh.includes(q)) ? 3 : 9;
+  return WORDS.map(w => [rank(w), w]).filter(x => x[0] < 9).sort((a, b) => a[0] - b[0] || a[1].word.localeCompare(b[1].word)).map(x => x[1]);
+}
+function browseList() {
+  const q = searchQuery();
+  return q ? searchWords(q) : inGroups(srcWords(browse.src, browse.levels), browse.groups);
+}
+
 function renderBrowse() {
   browse.groups = browse.groups.filter(n => groupOf(n));
   if (browse.src === 'all' && !browse.groups.length && GROUPS.length) browse.groups = [GROUPS[0].n];   // 全部單字一次看一組
   localStorage.setItem(BROWSE_KEY, JSON.stringify(browse));
-  renderFilter('browse', browse, renderBrowse, false);
+  const q = searchQuery();
+  $('browse-filter').classList.toggle('hidden', !!q);
+  $('browse-search-x').classList.toggle('hidden', !q);
+  if (!q) renderFilter('browse', browse, renderBrowse, false);
 
-  const list = inGroups(srcWords(browse.src, browse.levels), browse.groups);
-  $('browse-info').textContent = (browse.src === 'all' ? `課本 ${filterDesc(browse)}:${list.length} 個字。` : `${filterDesc(browse)}:${list.length} 個字。`) + BROWSE_INFO[browse.src];
-  $('btn-reset').classList.toggle('hidden', browse.src === 'all');
+  const list = browseList();
+  $('browse-info').textContent = q ? `搜尋「${$('browse-search').value.trim()}」:找到 ${list.length} 個字(英文或中文意思都可以搜)`
+    : (browse.src === 'all' ? `課本 ${filterDesc(browse)}:${list.length} 個字。` : `${filterDesc(browse)}:${list.length} 個字。`) + BROWSE_INFO[browse.src];
+  $('btn-reset').classList.toggle('hidden', browse.src === 'all' || !!q);
   $('browse-quiz').classList.toggle('hidden', !list.length);
   $('browse-quiz').textContent = `考這些單字(${list.length})`;
 
@@ -702,7 +717,7 @@ function renderBrowse() {
   ul.innerHTML = '';
   if (!list.length) {
     ul.innerHTML = `<li class="empty">${!WORDS.length ? '還沒有單字,先上傳課本照片'
-      : browse.src === 'weak' ? '目前沒有不熟的單字 👍' : browse.src === 'star' ? '這裡還沒有星號單字' : '沒有單字'}</li>`;
+      : q ? '題庫裡沒有這個字' : browse.src === 'weak' ? '目前沒有不熟的單字 👍' : browse.src === 'star' ? '這裡還沒有星號單字' : '沒有單字'}</li>`;
     return;
   }
   list.forEach(w => {
@@ -711,9 +726,9 @@ function renderBrowse() {
     li.innerHTML =
       `<div class="row">` + sayWord(w.word) +
       `<span class="w">${esc(w.word)}</span><span class="m">${esc(w.meaning)}</span>` +
-      (browse.src === 'weak' ? `<span class="n">錯 ${wrong}</span>` : '') +
+      (q ? `<span class="n pg">p.${w.page}</span>` : browse.src === 'weak' ? `<span class="n">錯 ${wrong}</span>` : '') +
       `<button class="x st${st ? ' on' : ''}${st > 1 ? ' many' : ''}" aria-label="星號">${starText(st)}</button>` +
-      (browse.src === 'weak' ? `<button class="x rm" aria-label="移出不熟">✕</button>` : '') +
+      (browse.src === 'weak' && !q ? `<button class="x rm" aria-label="移出不熟">✕</button>` : '') +
       `</div>` +
       (w.senses.length > 1 || w.senses.some(s => s.ex.length > 1)
         ? w.senses.map(s => `<div class="sense"><span class="pos">${POS_LABEL[s.pos]}</span> ${esc(s.zh)}</div>` + s.ex.map(exRow).join('')).join('')
@@ -724,7 +739,10 @@ function renderBrowse() {
     ul.appendChild(li);
   });
 }
-$('browse-quiz').onclick = () => startQuiz(inGroups(srcWords(browse.src, browse.levels), browse.groups), settings.mode);
+$('browse-quiz').onclick = () => startQuiz(browseList(), settings.mode);
+$('browse-search').oninput = renderBrowse;
+$('browse-search-x').onclick = () => { $('browse-search').value = ''; renderBrowse(); $('browse-search').focus(); };
+$('btn-search').onclick = () => { openBrowse(); $('browse-search').focus(); };
 document.querySelectorAll('.btn-to-home').forEach(b => b.onclick = () => { refreshHome(); show('home'); });
 $('btn-reset').onclick = () => {
   if (!confirm('確定要清除所有練習紀錄嗎?')) return;

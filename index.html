@@ -10,8 +10,8 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.svg">
   <link rel="icon" href="icon.svg">
-  <meta name="app-version" content="261107230158">
-  <link rel="stylesheet" href="style.css?v=261107230158">
+  <meta name="app-version" content="261108103815">
+  <link rel="stylesheet" href="style.css?v=261108103815">
   <title>英文單字練習</title>
 </head>
 <body>
@@ -57,6 +57,7 @@
       <p id="home-msg" class="msg"></p>
       <button id="btn-start" class="big-btn">開始練習</button>
       <button id="btn-browse" class="big-btn secondary">複習單字</button>
+      <button id="btn-search" class="link-btn">🔍 搜尋單字›</button>
       <button id="btn-upload" class="link-btn no-view">新增課本頁(上傳照片)›</button>
       <button id="btn-people" class="link-btn">看別人的題庫›</button>
       <p class="my-url msg small no-view">我的專屬網址:<span id="my-url"></span> <button id="btn-myurl" class="link-btn small">複製</button></p>
@@ -139,10 +140,13 @@
       <div class="top-right"></div>
     </header>
     <main class="home-body">
+      <div class="search-box"><input id="browse-search" class="txt" type="search" autocapitalize="off" autocomplete="off" placeholder="🔍 搜尋單字(英文或中文)"><button id="browse-search-x" class="x hidden" aria-label="清除">✕</button></div>
+      <div id="browse-filter">
       <div id="browse-src" class="chips src"></div>
       <div id="browse-level-box" class="hidden"><p class="msg small sub-h">星號等級(可以選好幾個,不選 = 全部星號)</p><div id="browse-levels" class="chips src"></div></div>
       <p class="msg small sub-h">課本頁數</p>
       <div id="browse-chips" class="chips"></div>
+      </div>
       <p id="browse-info" class="msg small"></p>
       <ul id="browse-list" class="word-list browse"></ul>
       <button id="browse-quiz" class="big-btn">考這一頁</button>
@@ -221,7 +225,7 @@
     </main>
   </section>
 
-  <script src="app.js?v=261107230158"></script>
-  <script src="upload.js?v=261107230158"></script>
+  <script src="app.js?v=261108103815"></script>
+  <script src="upload.js?v=261108103815"></script>
 </body>
 </html>
