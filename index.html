@@ -10,8 +10,8 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.svg">
   <link rel="icon" href="icon.svg">
-  <meta name="app-version" content="261108155840">
-  <link rel="stylesheet" href="style.css?v=261108155840">
+  <meta name="app-version" content="261119115852">
+  <link rel="stylesheet" href="style.css?v=261119115852">
   <title>英文單字練習</title>
 </head>
 <body>
@@ -31,6 +31,7 @@
       <h3>題型:選中文意思</h3>
       <button id="btn-addpos" class="toggle-btn"><span class="box"></span>加考詞性<small class="toggle-note">同一題也要選出詞性(n. v. adj.…)</small></button>
       <button id="btn-multi" class="toggle-btn"><span class="box"></span>多義複選<small class="toggle-note">不勾:多個意思的字隨機考其中一個</small></button>
+      <button id="btn-hideopts" class="toggle-btn"><span class="box"></span>先遮住選項<small class="toggle-note">想好答案,再點開來選</small></button>
 
       <h3>範圍</h3>
       <div id="scope-src" class="chips src"></div>
@@ -110,6 +111,7 @@
         <div id="word-sub" class="word-sub"></div>
         <button id="btn-say" class="say say-card" data-kind="w" aria-label="唸單字"></button>
       </div>
+      <button id="btn-reveal" class="reveal-btn hidden">顯示選項</button>
       <div id="options" class="options"></div>
       <div id="feedback" class="feedback"></div>
     </main>
@@ -146,9 +148,11 @@
       <div id="browse-level-box" class="hidden"><p class="msg small sub-h">星號等級(可以選好幾個,不選 = 全部星號)</p><div id="browse-levels" class="chips src"></div></div>
       <p class="msg small sub-h">課本頁數</p>
       <div id="browse-chips" class="chips"></div>
+      <div id="browse-pager" class="pager"><button class="pg-prev"></button><select id="pg-sel" aria-label="選擇頁數"></select><button class="pg-next"></button></div>
       </div>
       <p id="browse-info" class="msg small"></p>
       <ul id="browse-list" class="word-list browse"></ul>
+      <div id="browse-pager2" class="pager bottom"><button class="pg-prev"></button><button class="pg-next"></button></div>
       <button id="browse-quiz" class="big-btn">考這一頁</button>
       <button id="btn-reset" class="link-btn danger hidden no-view">清除所有練習紀錄</button>
     </main>
@@ -244,7 +248,7 @@
     </main>
   </section>
 
-  <script src="app.js?v=261108155840"></script>
-  <script src="upload.js?v=261108155840"></script>
+  <script src="app.js?v=261119115852"></script>
+  <script src="upload.js?v=261119115852"></script>
 </body>
 </html>

@@ -281,7 +281,13 @@ settings.mode = settings.mode === 'pos' || settings.mode === 'both' ? 'both' : '
 function renderAddPos() {
   $('btn-addpos').classList.toggle('on', settings.mode === 'both');
   $('btn-multi').classList.toggle('on', settings.multi !== 'off');
+  $('btn-hideopts').classList.toggle('on', settings.hideOpts === 'on');
 }
+$('btn-hideopts').onclick = () => {   // 先遮住選項:每題要點「顯示選項」才看得到,避免一看單字就瞄到答案
+  settings.hideOpts = settings.hideOpts === 'on' ? 'off' : 'on';
+  saveSettings();
+  renderAddPos();
+};
 $('btn-multi').onclick = () => {   // 多義複選:一個字有好幾個意思時一次全選;不勾 → 隨機考其中一個(單選)
   settings.multi = settings.multi === 'off' ? 'on' : 'off';
   saveSettings();
@@ -359,7 +365,7 @@ function renderScopeChips() {
   $('scope-info').textContent = `考${filterDesc(settings)},共 ${scopePool().length} 個字`;
 }
 function filterDesc(sel) {
-  const where = sel.groups.length ? sel.groups.map(n => bookPages(groupOf(n))).join('、') + ' ' : '';
+  const where = sel.page != null ? `p.${sel.page} ` : sel.groups.length ? sel.groups.map(n => bookPages(groupOf(n))).join('、') + ' ' : '';
   const what = sel.src === 'weak' ? '的不熟單字'
     : sel.src === 'star' ? `的${sel.levels.length ? ' ' + sel.levels.map(starText).join('、') + ' ' : ''}星號單字`
     : where ? '' : '全部';
@@ -434,8 +440,16 @@ function renderQuestion() {
   if (quiz.mode !== 'meaning') box.appendChild(buildPosGrid());
 
   $('btn-action').textContent = '確認';
-  $('btn-action').classList.toggle('hidden', quiz.mode === 'meaning' && !multi);
+  coverOptions(settings.hideOpts === 'on');
 }
+
+// 遮住選項時,確認鈕也一起藏起來;單選的「只考意思」點選項就交卷,本來就沒有確認鈕
+function coverOptions(covered) {
+  $('options').classList.toggle('hidden', covered);
+  $('btn-reveal').classList.toggle('hidden', !covered);
+  $('btn-action').classList.toggle('hidden', covered || (quiz.mode === 'meaning' && quiz.answers.length <= 1));
+}
+$('btn-reveal').onclick = () => coverOptions(false);
 
 function sectionLabel(text) {
   const d = document.createElement('div');
@@ -603,6 +617,7 @@ $('btn-hint').onclick = () => {
   if (quiz.answered) return;
   const q = quiz.list[quiz.i];
   quiz.answered = true;
+  coverOptions(false);   // 選項還遮著時按提示,也要看得到標出來的答案
   if (quiz.mode !== 'pos') markMeaning(q, true);
   if (quiz.mode !== 'meaning') markPos(q, true);
   finishAnswer(false, '', true);
@@ -657,14 +672,14 @@ $('btn-home').onclick = () => { refreshHome(); show('home'); };
 
 // ---------- 複習單字(全部 / 不熟 / 星號,再按課本頁數分組) ----------
 const BROWSE_KEY = BROWSE_KEY_OF(UID);
-const browse = (() => {   // {src, levels, groups:[一組] 或 [](全部頁)};以前存的是 '1'、'2'… 或 'weak'
+const browse = (() => {   // {src, levels, groups:[一組] 或 [](全部頁), page:單看課本第幾頁(null = 整組)};以前存的是 '1'、'2'… 或 'weak'
   const v = localStorage.getItem(BROWSE_KEY) || '';
-  try { const o = JSON.parse(v); if (o && o.src) return { src: o.src, levels: o.levels || [], groups: o.groups || [] }; } catch {}
-  return v === 'weak' ? { src: 'weak', levels: [], groups: [] } : { src: 'all', levels: [], groups: v ? [+v] : [] };
+  try { const o = JSON.parse(v); if (o && o.src) return { src: o.src, levels: o.levels || [], groups: o.groups || [], page: o.page ?? null }; } catch {}
+  return v === 'weak' ? { src: 'weak', levels: [], groups: [], page: null } : { src: 'all', levels: [], groups: v ? [+v] : [], page: null };
 })();
 
 function openBrowse(src) {
-  if (src && src !== browse.src) Object.assign(browse, { src, levels: [], groups: [] });
+  if (src && src !== browse.src) Object.assign(browse, { src, levels: [], groups: [], page: null });
   renderBrowse();
   show('browse');
 }
@@ -687,17 +702,49 @@ function searchWords(q) {
 }
 function browseList() {
   const q = searchQuery();
-  return q ? searchWords(q) : inGroups(srcWords(browse.src, browse.levels), browse.groups);
+  if (q) return searchWords(q);
+  const list = srcWords(browse.src, browse.levels);
+  return browse.page != null ? list.filter(w => w.page === browse.page) : inGroups(list, browse.groups);
+}
+
+// 單頁:選單選第幾頁,或上一頁/下一頁(跨組也可以,上面的組會跟著換)。只列出這個範圍(全部/不熟/星號)有字的頁
+function browsePages() { return [...new Set(srcWords(browse.src, browse.levels).map(w => w.page))].sort((a, b) => a - b); }
+function goPage(p, fromBottom) {
+  browse.page = p;
+  if (p != null) browse.groups = [groupNOf({ page: p })];
+  renderBrowse();
+  if (fromBottom) $('browse-pager').scrollIntoView({ block: 'start' });
+}
+function renderPager(pages) {
+  const g = browse.groups.length === 1 ? groupOf(browse.groups[0]) : null;
+  const lo = browse.page ?? (g ? g.from : 0), hi = browse.page ?? (g ? g.from - 1 : 0);   // 整組時:上一頁 = 這組前面那頁,下一頁 = 這組第一頁
+  const prev = [...pages].reverse().find(p => p < lo), next = pages.find(p => p > hi);
+  document.querySelectorAll('#browse .pg-prev, #browse .pg-next').forEach(b => {
+    const p = b.classList.contains('pg-prev') ? prev : next;
+    b.disabled = p == null;
+    b.textContent = p == null ? (b.classList.contains('pg-prev') ? '‹ 上一頁' : '下一頁 ›') : b.classList.contains('pg-prev') ? `‹ p.${p}` : `p.${p} ›`;
+    b.onclick = () => goPage(p, !!b.closest('.bottom'));
+  });
+  const sel = $('pg-sel'), base = srcWords(browse.src, browse.levels);
+  sel.innerHTML = `<option value="">${g ? `整組 ${bookPages(g)}` : '全部頁'}・選單頁</option>` +
+    pages.map(p => `<option value="${p}">第 ${p} 頁(${base.filter(w => w.page === p).length} 字)</option>`).join('');
+  sel.value = browse.page ?? '';
+  sel.onchange = () => goPage(sel.value ? +sel.value : null);
+  $('browse-pager').classList.toggle('hidden', !pages.length);
+  $('browse-pager2').classList.toggle('hidden', browse.page == null || !!searchQuery());
 }
 
 function renderBrowse() {
+  const pages = browsePages();
+  if (browse.page != null && !pages.includes(browse.page)) browse.page = null;   // 那頁的字被移出不熟/星號了 → 回到整組
   browse.groups = browse.groups.filter(n => groupOf(n));
   if (browse.src === 'all' && !browse.groups.length && GROUPS.length) browse.groups = [GROUPS[0].n];   // 全部單字一次看一組
   localStorage.setItem(BROWSE_KEY, JSON.stringify(browse));
   const q = searchQuery();
   $('browse-filter').classList.toggle('hidden', !!q);
   $('browse-search-x').classList.toggle('hidden', !q);
-  if (!q) renderFilter('browse', browse, renderBrowse, false);
+  if (!q) renderFilter('browse', browse, () => { browse.page = null; renderBrowse(); }, false);   // 點上面的分類 → 回到整組
+  renderPager(pages);
 
   const list = browseList();
   $('browse-info').textContent = q ? `搜尋「${$('browse-search').value.trim()}」:找到 ${list.length} 個字(英文或中文意思都可以搜)`
